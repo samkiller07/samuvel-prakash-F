@@ -30,10 +30,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Policy for admin_users: Authenticated users can check their own admin status
-CREATE POLICY "Users can verify their own admin status" ON public.admin_users
+-- Policy for admin_users: Authenticated users can check admin status
+CREATE POLICY "Users can verify admin status" ON public.admin_users
     FOR SELECT TO authenticated
-    USING (user_id = auth.uid() OR public.is_admin());
+    USING (true);
 
 -- ==========================================================
 -- 3. CONTENT TABLES

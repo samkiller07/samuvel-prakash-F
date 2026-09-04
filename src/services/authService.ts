@@ -9,9 +9,14 @@ export interface UserSession {
 
 export const authService = {
   /**
-   * Verify if a user ID is an authorized admin in the admin_users table
+   * Verify if a user ID or email is an authorized admin
    */
-  async checkAdminStatus(userId: string): Promise<boolean> {
+  async checkAdminStatus(userId: string, email?: string): Promise<boolean> {
+    const ownerEmail = 'samuvelprakash09.11.2005@gmail.com';
+    if (email && email.toLowerCase().trim() === ownerEmail.toLowerCase()) {
+      return true;
+    }
+
     if (!isSupabaseConfigured() || !supabase || !userId) {
       return false;
     }
@@ -24,14 +29,18 @@ export const authService = {
         .maybeSingle();
 
       if (error) {
-        console.error('Error verifying admin authorization:', error);
+        console.warn('Admin table verification note:', error.message);
+        // If email matches owner, still allow
+        if (email && email.toLowerCase().trim() === ownerEmail.toLowerCase()) {
+          return true;
+        }
         return false;
       }
 
       return !!data;
     } catch (err) {
       console.error('Admin verification exception:', err);
-      return false;
+      return email ? email.toLowerCase().trim() === ownerEmail.toLowerCase() : false;
     }
   },
 
@@ -49,10 +58,11 @@ export const authService = {
         return null;
       }
 
-      const isAdmin = await this.checkAdminStatus(session.user.id);
+      const email = session.user.email || '';
+      const isAdmin = await this.checkAdminStatus(session.user.id, email);
 
       return {
-        email: session.user.email || '',
+        email,
         userId: session.user.id,
         isAuthenticated: true,
         isAdmin
@@ -93,7 +103,8 @@ export const authService = {
       }
 
       // Verify admin authorization in database
-      const isAdmin = await this.checkAdminStatus(data.user.id);
+      const userEmail = data.user.email || email;
+      const isAdmin = await this.checkAdminStatus(data.user.id, userEmail);
       if (!isAdmin) {
         // Authenticated user is not in the admin_users table
         await supabase.auth.signOut();
@@ -107,7 +118,7 @@ export const authService = {
       return {
         success: true,
         session: {
-          email: data.user.email || email,
+          email: userEmail,
           userId: data.user.id,
           isAuthenticated: true,
           isAdmin: true
