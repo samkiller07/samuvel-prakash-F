@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button } from '../components/ui/Button';
 import {
   Mail,
   Linkedin,
@@ -8,25 +7,24 @@ import {
   Copy,
   Check,
   Radio,
-  Send,
-  CheckCircle2,
-  Clock
+  MapPin,
+  Clock,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react';
 
 const CONTACT_INFO = {
   name: 'SAMUVEL PRAKASH F',
   email: 'samuvelprakash09.11.2005@gmail.com',
   linkedin: 'https://linkedin.com/in/samuvel-prakash-f-3385902a5',
-  github: 'https://github.com/samkiller07'
+  github: 'https://github.com/samkiller07',
+  location: 'Tamil Nadu, India',
+  timezone: 'IST (UTC +5:30)',
+  status: 'OPEN FOR ROLES & COLLABORATIONS'
 };
 
 export const ContactSection: React.FC = () => {
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [senderName, setSenderName] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
-  const [isSent, setIsSent] = useState(false);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(CONTACT_INFO.email);
@@ -34,221 +32,171 @@ export const ContactSection: React.FC = () => {
     setTimeout(() => setCopiedEmail(false), 2500);
   };
 
-  const handleDirectEmail = (e: React.FormEvent) => {
-    e.preventDefault();
-    const mailSubject = encodeURIComponent(`[Portfolio Inquiry] ${subject || 'Engineering Discussion'} - ${senderName}`);
-    const mailBody = encodeURIComponent(`Name: ${senderName}\nEmail: ${senderEmail}\n\nMessage:\n${message}`);
-    window.location.href = `mailto:${CONTACT_INFO.email}?subject=${mailSubject}&body=${mailBody}`;
-    setIsSent(true);
-  };
-
   return (
     <section id="contact" className="py-16 sm:py-20 px-3 sm:px-6 lg:px-8 bg-hud-bg border-t border-hud-border">
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Section Header */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-widest">
-            <span className="w-2 h-2 bg-hud-green rounded-full" />
+            <span className="w-2 h-2 bg-hud-green rounded-full animate-ping" />
             <span>07 // COMMS UPLINK &bull; DIRECT REACHABILITY</span>
           </div>
           <h2 className="font-tech text-3xl sm:text-4xl font-bold uppercase tracking-wide text-hud-bright">
-            CONNECT &amp; INITIATE TRANSMISSION
+            CONNECT &amp; DIRECT CHANNELS
           </h2>
           <div className="circuit-line-h w-48" />
         </div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Channels Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Left info & direct channels */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm space-y-4 hud-corner">
-              <div className="font-mono text-xs text-hud-green uppercase tracking-wider flex items-center gap-2">
-                <Terminal className="w-4 h-4" />
-                <span>OFFICIAL CHANNELS</span>
-              </div>
-              <p className="text-xs sm:text-sm text-hud-slate leading-relaxed font-sans">
-                Open to full-time engineering roles, robotics R&amp;D positions, industrial automation internships, and ambitious mechatronics collaborations.
-              </p>
-
-              <div className="space-y-3 pt-2">
-                {/* Email Item with copy */}
-                <div className="p-3 bg-hud-panel border border-hud-border rounded-sm flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Mail className="w-4 h-4 text-hud-green flex-shrink-0" />
-                    <span className="font-mono text-xs text-hud-bright truncate">
-                      {CONTACT_INFO.email}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleCopyEmail}
-                    className="p-1.5 hover:bg-hud-hover text-hud-muted hover:text-hud-green rounded-sm transition-colors text-xs font-mono flex items-center gap-1 flex-shrink-0"
-                    title="Copy Email"
-                  >
-                    {copiedEmail ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-hud-green" />
-                        <span className="text-hud-green text-[10px]">COPIED</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span className="text-[10px]">COPY</span>
-                      </>
-                    )}
-                  </button>
+          {/* Email Direct Channel Card */}
+          <div className="bg-hud-card border border-hud-border p-6 rounded-sm space-y-4 hud-corner flex flex-col justify-between hover:border-hud-green/50 transition-all duration-200">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-sm bg-hud-green/10 border border-hud-green/30 flex items-center justify-center text-hud-green">
+                  <Mail className="w-5 h-5" />
                 </div>
-
-                {/* LinkedIn Link */}
-                <a
-                  href={CONTACT_INFO.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-hud-panel border border-hud-border hover:border-hud-green/60 rounded-sm flex items-center justify-between text-xs font-mono text-hud-text hover:text-hud-bright transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <Linkedin className="w-4 h-4 text-hud-green flex-shrink-0" />
-                    <span className="truncate">linkedin.com/in/samuvel-prakash-f-3385902a5</span>
-                  </div>
-                  <span className="text-hud-slate group-hover:text-hud-green">&rarr;</span>
-                </a>
-
-                {/* GitHub Link */}
-                <a
-                  href={CONTACT_INFO.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-hud-panel border border-hud-border hover:border-hud-green/60 rounded-sm flex items-center justify-between text-xs font-mono text-hud-text hover:text-hud-bright transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <Github className="w-4 h-4 text-hud-green flex-shrink-0" />
-                    <span className="truncate">github.com/samkiller07</span>
-                  </div>
-                  <span className="text-hud-slate group-hover:text-hud-green">&rarr;</span>
-                </a>
+                <span className="font-mono text-[10px] text-hud-green uppercase tracking-wider bg-hud-panel px-2 py-0.5 border border-hud-green/20 rounded-sm">
+                  PRIMARY EMAIL
+                </span>
+              </div>
+              <div>
+                <h3 className="font-tech text-base font-bold text-hud-bright uppercase">
+                  DIRECT EMAIL INBOX
+                </h3>
+                <p className="text-xs text-hud-slate font-sans mt-1">
+                  For job opportunities, technical consulting, and robotics research inquiries.
+                </p>
+              </div>
+              <div className="p-2.5 bg-hud-panel border border-hud-border rounded-sm font-mono text-xs text-hud-bright break-all">
+                {CONTACT_INFO.email}
               </div>
             </div>
 
-            {/* Quick response badge */}
-            <div className="p-4 bg-hud-panel border border-hud-border rounded-sm flex items-center gap-3">
-              <span className="w-2.5 h-2.5 bg-hud-green rounded-full animate-ping" />
-              <div className="text-xs font-mono">
-                <span className="text-hud-green font-bold">ACTIVE RESPONSE TIME:</span>
-                <span className="text-hud-slate ml-2">&lt; 24 HOURS</span>
-              </div>
+            <div className="pt-2 flex items-center gap-2">
+              <button
+                onClick={handleCopyEmail}
+                className="flex-1 py-2 px-3 bg-hud-panel hover:bg-hud-hover border border-hud-border hover:border-hud-green text-hud-bright rounded-sm font-mono text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                {copiedEmail ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-hud-green" />
+                    <span className="text-hud-green font-bold">COPIED TO CLIPBOARD</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-hud-muted" />
+                    <span>COPY EMAIL</span>
+                  </>
+                )}
+              </button>
+              <a
+                href={`mailto:${CONTACT_INFO.email}`}
+                className="p-2 bg-hud-green/10 hover:bg-hud-green text-hud-green hover:text-black border border-hud-green/40 rounded-sm transition-colors"
+                title="Open Email Client"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </div>
 
-          {/* Right: Direct Email Dispatch */}
-          <div className="lg:col-span-7 bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm shadow-xl hud-corner space-y-4">
-            <div className="pb-3 border-b border-hud-border flex items-center justify-between">
-              <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-wider font-bold">
-                <Radio className="w-4 h-4 text-hud-green animate-pulse" />
-                <span>DIRECT INQUIRY // INITIATE COMMS</span>
+          {/* LinkedIn Profile Card */}
+          <div className="bg-hud-card border border-hud-border p-6 rounded-sm space-y-4 hud-corner flex flex-col justify-between hover:border-hud-green/50 transition-all duration-200">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-sm bg-hud-green/10 border border-hud-green/30 flex items-center justify-center text-hud-green">
+                  <Linkedin className="w-5 h-5" />
+                </div>
+                <span className="font-mono text-[10px] text-hud-green uppercase tracking-wider bg-hud-panel px-2 py-0.5 border border-hud-green/20 rounded-sm">
+                  PROFESSIONAL
+                </span>
               </div>
-              <span className="text-[10px] font-mono text-hud-muted">DIRECT MAIL</span>
+              <div>
+                <h3 className="font-tech text-base font-bold text-hud-bright uppercase">
+                  LINKEDIN NETWORK
+                </h3>
+                <p className="text-xs text-hud-slate font-sans mt-1">
+                  Connect for professional updates, publications, and engineering career networking.
+                </p>
+              </div>
+              <div className="p-2.5 bg-hud-panel border border-hud-border rounded-sm font-mono text-xs text-hud-slate truncate">
+                in/samuvel-prakash-f-3385902a5
+              </div>
             </div>
 
-            {isSent ? (
-              <div className="p-8 bg-hud-panel border border-hud-green/50 rounded-sm text-center space-y-3 font-mono">
-                <CheckCircle2 className="w-10 h-10 text-hud-green mx-auto" />
-                <h3 className="font-tech text-lg font-bold text-hud-green uppercase">
-                  EMAIL CLIENT OPENED
-                </h3>
-                <p className="text-xs text-hud-slate max-w-md mx-auto">
-                  Your message has been formatted and queued for direct transmission to <span className="text-hud-bright">{CONTACT_INFO.email}</span>.
-                </p>
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsSent(false);
-                      setSubject('');
-                      setMessage('');
-                    }}
-                  >
-                    SEND ANOTHER INQUIRY
-                  </Button>
+            <div className="pt-2">
+              <a
+                href={CONTACT_INFO.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 px-3 bg-hud-panel hover:bg-hud-green hover:text-black border border-hud-border hover:border-hud-green text-hud-bright rounded-sm font-mono text-xs flex items-center justify-center gap-2 transition-colors group"
+              >
+                <span>VIEW LINKEDIN PROFILE</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* GitHub Repositories Card */}
+          <div className="bg-hud-card border border-hud-border p-6 rounded-sm space-y-4 hud-corner flex flex-col justify-between hover:border-hud-green/50 transition-all duration-200">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-sm bg-hud-green/10 border border-hud-green/30 flex items-center justify-center text-hud-green">
+                  <Github className="w-5 h-5" />
                 </div>
+                <span className="font-mono text-[10px] text-hud-green uppercase tracking-wider bg-hud-panel px-2 py-0.5 border border-hud-green/20 rounded-sm">
+                  CODE &amp; CAD
+                </span>
               </div>
-            ) : (
-              <form onSubmit={handleDirectEmail} className="space-y-4 font-mono text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-hud-muted uppercase tracking-wider block">
-                      YOUR NAME *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      placeholder="e.g. Hiring Manager / Engineering Lead"
-                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
-                    />
-                  </div>
+              <div>
+                <h3 className="font-tech text-base font-bold text-hud-bright uppercase">
+                  GITHUB REPOSITORY
+                </h3>
+                <p className="text-xs text-hud-slate font-sans mt-1">
+                  Explore open source robotics code, firmware, CAD designs, and active projects.
+                </p>
+              </div>
+              <div className="p-2.5 bg-hud-panel border border-hud-border rounded-sm font-mono text-xs text-hud-slate truncate">
+                github.com/samkiller07
+              </div>
+            </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-hud-muted uppercase tracking-wider block">
-                      YOUR EMAIL ADDRESS *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={senderEmail}
-                      onChange={(e) => setSenderEmail(e.target.value)}
-                      placeholder="name@organization.com"
-                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
+            <div className="pt-2">
+              <a
+                href={CONTACT_INFO.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 px-3 bg-hud-panel hover:bg-hud-green hover:text-black border border-hud-border hover:border-hud-green text-hud-bright rounded-sm font-mono text-xs flex items-center justify-center gap-2 transition-colors group"
+              >
+                <span>VISIT GITHUB REPOSITORY</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-hud-muted uppercase tracking-wider block">
-                    INQUIRY SUBJECT *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g. Robotics Engineering Role / Technical Collaboration"
-                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
-                  />
-                </div>
+        </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-hud-muted uppercase tracking-wider block">
-                    MESSAGE PAYLOAD *
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Provide details about your project specifications or role..."
-                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-                  />
-                </div>
-
-                <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="text-[10px] text-hud-muted">
-                    * Direct transmission to {CONTACT_INFO.email}
-                  </div>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    icon={<Send className="w-3.5 h-3.5" />}
-                    iconPosition="right"
-                  >
-                    SEND DIRECT INQUIRY
-                  </Button>
-                </div>
-              </form>
-            )}
+        {/* Telemetry & Availability Footer Banner */}
+        <div className="p-4 sm:p-5 bg-hud-card border border-hud-border rounded-sm flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+          <div className="flex items-center gap-2 text-hud-green font-bold">
+            <Radio className="w-4 h-4 text-hud-green animate-pulse" />
+            <span>OPERATOR STATUS: {CONTACT_INFO.status}</span>
+          </div>
+          <div className="flex items-center gap-6 text-hud-slate text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-hud-muted" />
+              <span>{CONTACT_INFO.location}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-hud-muted" />
+              <span>{CONTACT_INFO.timezone}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-hud-green" />
+              <span>VERIFIED OPERATOR</span>
+            </div>
           </div>
         </div>
 

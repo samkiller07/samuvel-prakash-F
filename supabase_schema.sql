@@ -398,3 +398,106 @@ INSERT INTO public.projects (
     false,
     6
 );
+
+-- ==========================================================
+-- 6. PROFILE SETTINGS & MEDIA TABLE
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS public.profile_settings (
+    id TEXT PRIMARY KEY DEFAULT 'default',
+    name TEXT NOT NULL DEFAULT 'Samuvel Prakash F',
+    title TEXT NOT NULL DEFAULT 'Aspiring Robotics Engineer • Hardware × Software',
+    tagline TEXT DEFAULT 'Mechatronics • Robotics • Automation • Embedded & AI',
+    image_url TEXT,
+    avatar_url TEXT,
+    operator_id TEXT DEFAULT 'OP-SAM-01',
+    status TEXT DEFAULT 'ONLINE // READY',
+    bio TEXT,
+    github_url TEXT,
+    linkedin_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Default row for profile_settings
+INSERT INTO public.profile_settings (id, name, title, tagline, operator_id, status, bio, github_url, linkedin_url)
+VALUES (
+    'default',
+    'Samuvel Prakash F',
+    'Aspiring Robotics Engineer • Hardware × Software',
+    'Mechatronics • Robotics • Automation • Embedded & AI',
+    'OP-SAM-01',
+    'ONLINE // READY',
+    'Building practical mechatronics systems by combining embedded systems, sensors, automation logic, IoT, and computer vision for real-world engineering applications.',
+    'https://github.com/samkiller07',
+    'https://linkedin.com/in/samuvel-prakash-f-3385902a5'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================================
+-- 7. COMMENTS & ADMIN REPLIES TABLE
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS public.comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_id UUID REFERENCES public.comments(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    comment TEXT NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE public.profile_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+
+-- Permissions Grants for PostgREST anon and authenticated roles
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON TABLE public.profile_settings TO anon, authenticated;
+GRANT ALL ON TABLE public.comments TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
+
+-- Profile Settings Policies
+DROP POLICY IF EXISTS "Public can view profile settings" ON public.profile_settings;
+CREATE POLICY "Public can view profile settings" ON public.profile_settings
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow upsert profile settings" ON public.profile_settings;
+CREATE POLICY "Allow upsert profile settings" ON public.profile_settings
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Comments Policies
+DROP POLICY IF EXISTS "Anyone can view comments" ON public.comments;
+CREATE POLICY "Anyone can view comments" ON public.comments
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Anyone can create top-level comments" ON public.comments;
+CREATE POLICY "Anyone can create top-level comments" ON public.comments
+    FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow delete and reply management" ON public.comments;
+CREATE POLICY "Allow delete and reply management" ON public.comments
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================================
+-- 8. STORAGE BUCKETS CONFIGURATION
+-- ==========================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES 
+    ('profile-media', 'profile-media', true),
+    ('portfolio-media', 'portfolio-media', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Storage Policies
+DROP POLICY IF EXISTS "Public Profile Media Access" ON storage.objects;
+CREATE POLICY "Public Profile Media Access" ON storage.objects
+    FOR SELECT USING (bucket_id IN ('profile-media', 'portfolio-media'));
+
+DROP POLICY IF EXISTS "Public Upload Profile Media" ON storage.objects;
+CREATE POLICY "Public Upload Profile Media" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id IN ('profile-media', 'portfolio-media'));
+
+DROP POLICY IF EXISTS "Public Update Profile Media" ON storage.objects;
+CREATE POLICY "Public Update Profile Media" ON storage.objects
+    FOR UPDATE USING (bucket_id IN ('profile-media', 'portfolio-media'));
+
