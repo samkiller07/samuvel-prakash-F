@@ -12,10 +12,9 @@ import {
   Check,
   MessageSquare,
   ShieldCheck,
-  CornerDownRight,
   Clock,
-  Sparkles,
-  Radio
+  Radio,
+  Sparkles
 } from 'lucide-react';
 
 const CONTACT_INFO = {
@@ -26,14 +25,10 @@ const CONTACT_INFO = {
 };
 
 export const ContactSection: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  const [name, setName] = useState('');
+  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDispatched, setIsDispatched] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [messages, setMessages] = useState<ContactMessage[]>(messageService.getLocalMessages());
 
@@ -42,7 +37,7 @@ export const ContactSection: React.FC = () => {
       const msgs = await messageService.getPublicMessages();
       setMessages(msgs);
     } catch (err) {
-      console.error('Error fetching public messages:', err);
+      console.error('Error fetching transmissions:', err);
     }
   };
 
@@ -52,31 +47,24 @@ export const ContactSection: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !message.trim()) return;
+
     setIsSubmitting(true);
 
     try {
-      // 1. Save to database / public message feed
-      await messageService.submitMessage(formData);
+      // Direct post to database / feed without mail client
+      await messageService.submitMessage({
+        name: name.trim(),
+        message: message.trim()
+      });
 
-      // 2. Open mailto client for direct email delivery
-      const mailtoSubject = encodeURIComponent(
-        `[Portfolio Inquiry] ${formData.subject || 'Engineering Discussion'} - ${formData.name}`
-      );
-      const mailtoBody = encodeURIComponent(
-        `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
-      );
-      const mailtoUrl = `mailto:${CONTACT_INFO.email}?subject=${mailtoSubject}&body=${mailtoBody}`;
-      
-      try {
-        window.open(mailtoUrl, '_blank');
-      } catch {
-        // Ignore popup blockers
-      }
-
-      setIsDispatched(true);
+      setName('');
+      setMessage('');
+      setSuccessToast(true);
+      setTimeout(() => setSuccessToast(false), 4000);
       await loadMessages();
     } catch (err) {
-      console.error('Submit error:', err);
+      console.error('Transmission submit error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,10 +84,10 @@ export const ContactSection: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-widest">
             <span className="w-2 h-2 bg-hud-green rounded-full animate-ping" />
-            <span>06 // COMMS UPLINK &bull; DIRECT CONTACT &amp; REVIEWS</span>
+            <span>06 // COMMS UPLINK &bull; DIRECT CONTACT &amp; COMMUNITY TRANSMISSIONS</span>
           </div>
           <h2 className="font-tech text-3xl sm:text-4xl font-bold uppercase tracking-wide text-hud-bright">
-            CONNECT / INITIATE TRANSMISSION
+            CONNECT &amp; TRANSMIT
           </h2>
           <div className="circuit-line-h w-48" />
         </div>
@@ -186,131 +174,86 @@ export const ContactSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Interactive Direct Comms Form */}
-          <div className="lg:col-span-7 bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm shadow-xl hud-corner">
-            <div className="pb-4 mb-6 border-b border-hud-border flex items-center justify-between">
+          {/* Right: Simplified Comment / Transmission Box */}
+          <div className="lg:col-span-7 bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm shadow-xl hud-corner space-y-4">
+            <div className="pb-3 border-b border-hud-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-hud-green animate-pulse" />
                 <span className="font-mono text-xs text-hud-green tracking-widest uppercase">
-                  MESSAGE DISPATCH PROTOCOL // PUBLIC REVIEW UPLINK
+                  LEAVE A PUBLIC TRANSMISSION / COMMENT
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-hud-muted">DIRECT UPLINK</span>
+              <span className="text-[10px] font-mono text-hud-muted">DIRECT BROADCAST</span>
             </div>
 
-            {isDispatched ? (
-              <div className="p-8 bg-hud-panel border border-hud-green/50 rounded-sm text-center space-y-3 font-mono">
-                <CheckCircle2 className="w-10 h-10 text-hud-green mx-auto animate-bounce" />
-                <h3 className="font-tech text-lg font-bold text-hud-green uppercase">
-                  TRANSMISSION BROADCASTED &amp; LOGGED
-                </h3>
-                <p className="text-xs text-hud-slate max-w-md mx-auto">
-                  Your message has been logged to the public transmission board and queued for the operator at <span className="text-hud-bright">{CONTACT_INFO.email}</span>.
-                </p>
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsDispatched(false);
-                      setFormData({ name: '', email: '', subject: '', message: '' });
-                    }}
-                  >
-                    SEND ANOTHER TRANSMISSION
-                  </Button>
-                </div>
+            {/* Success Notification */}
+            {successToast && (
+              <div className="p-3 bg-hud-green/10 border border-hud-green/50 text-hud-green rounded-sm flex items-center gap-2 font-mono text-xs animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>[TRANSMISSION LOGGED] Your comment is now live on the public feed!</span>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-hud-muted uppercase tracking-wider block">
-                      OPERATOR / YOUR NAME *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. Engineering Lead / Recruiter / Peer"
-                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-hud-muted uppercase tracking-wider block">
-                      RETURN EMAIL ADDRESS *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="your.email@organization.com"
-                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-hud-muted uppercase tracking-wider block">
-                    TRANSMISSION SUBJECT / REVIEW TOPIC *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="e.g. Project Feedback / Robotics Role / Collaboration"
-                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-hud-muted uppercase tracking-wider block">
-                    TRANSMISSION PAYLOAD / MESSAGE CONTENT *
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Enter your message, recommendation, or project inquiries..."
-                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green resize-y"
-                  />
-                </div>
-
-                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="text-[10px] text-hud-muted">
-                    * BROADCASTS TO PUBLIC TELEMETRY LOG &amp; DIRECT EMAIL
-                  </div>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    disabled={isSubmitting}
-                    icon={<Send className="w-3.5 h-3.5" />}
-                    iconPosition="right"
-                  >
-                    {isSubmitting ? 'DISPATCHING...' : 'DISPATCH TRANSMISSION'}
-                  </Button>
-                </div>
-              </form>
             )}
+
+            {/* Clean 2-Field Form */}
+            <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
+              <div className="space-y-1.5">
+                <label className="text-hud-muted uppercase tracking-wider block">
+                  YOUR NAME / CALLSIGN *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Alex (Engineering Lead) / Recruiter / Fellow Engineer"
+                  className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-hud-muted uppercase tracking-wider block">
+                  TRANSMISSION MESSAGE / COMMENT *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Share a thought, project feedback, collaboration note, or inquiry..."
+                  className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green resize-y"
+                />
+              </div>
+
+              <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-[10px] text-hud-muted">
+                  * Instantly published to the public telemetry transmission board
+                </div>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={isSubmitting || !name.trim() || !message.trim()}
+                  icon={<Send className="w-3.5 h-3.5" />}
+                  iconPosition="right"
+                >
+                  {isSubmitting ? 'BROADCASTING...' : 'POST TRANSMISSION'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
 
-        {/* Public Transmission Logs & Reviews Feed */}
+        {/* Public Transmission Logs & Comments Stream */}
         <div className="pt-4 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-hud-border">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-hud-cyan" />
               <span className="font-tech text-base sm:text-lg font-bold text-hud-bright uppercase tracking-wide">
-                TRANSMISSION LOGS &amp; COMMUNITY REVIEWS
+                TRANSMISSION LOGS &amp; COMMUNITY REVIEWS ({messages.length})
               </span>
             </div>
             <div className="text-xs font-mono text-hud-muted">
-              {messages.length} RECORDED TRANSMISSIONS
+              LIVE BROADCAST STREAM
             </div>
           </div>
 
@@ -322,14 +265,9 @@ export const ContactSection: React.FC = () => {
               >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2 border-b border-hud-border pb-2.5">
-                  <div>
-                    <div className="font-bold text-hud-bright flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-hud-cyan rounded-full" />
-                      <span>{msg.name}</span>
-                    </div>
-                    <div className="text-[11px] text-hud-green font-semibold mt-0.5">
-                      {msg.subject}
-                    </div>
+                  <div className="font-bold text-hud-bright flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-hud-cyan rounded-full" />
+                    <span>{msg.name}</span>
                   </div>
                   <div className="text-[10px] text-hud-muted flex items-center gap-1 flex-shrink-0">
                     <Clock className="w-3 h-3" />

@@ -101,19 +101,19 @@ export const messageService = {
   },
 
   /**
-   * Submit a new transmission/message from the public contact form
+   * Submit a new public comment/transmission
    */
   async submitMessage(formData: {
     name: string;
-    email: string;
-    subject: string;
     message: string;
+    email?: string;
+    subject?: string;
   }): Promise<{ success: boolean; data?: ContactMessage; error?: string }> {
     const newMessage: ContactMessage = {
       id: `msg-${Date.now()}`,
       name: formData.name.trim(),
-      email: formData.email.trim(),
-      subject: formData.subject.trim() || 'General Engineering Inquiry',
+      email: formData.email?.trim() || '',
+      subject: formData.subject?.trim() || 'Community Transmission',
       message: formData.message.trim(),
       created_at: new Date().toISOString(),
       is_public: true
@@ -137,7 +137,7 @@ export const messageService = {
         .from('contact_messages')
         .insert({
           name: newMessage.name,
-          email: formData.email,
+          email: newMessage.email || 'public@visitor.net',
           subject: newMessage.subject,
           message: newMessage.message
         })
