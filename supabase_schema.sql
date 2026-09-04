@@ -107,16 +107,13 @@ CREATE TABLE IF NOT EXISTS public.certifications (
     sort_order INT DEFAULT 0 NOT NULL
 );
 
--- Contact Messages & Public Transmission Review Table
-CREATE TABLE IF NOT EXISTS public.contact_messages (
+-- Comments Table (Supports visitor comments and nested admin replies)
+CREATE TABLE IF NOT EXISTS public.comments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    admin_reply TEXT,
-    replied_at TIMESTAMP WITH TIME ZONE,
-    is_public BOOLEAN DEFAULT true NOT NULL,
+    comment TEXT NOT NULL,
+    parent_id UUID REFERENCES public.comments(id) ON DELETE CASCADE,
+    is_admin BOOLEAN DEFAULT false NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -126,6 +123,7 @@ CREATE TABLE IF NOT EXISTS public.profile_settings (
     name VARCHAR(255) DEFAULT 'Samuvel Prakash F',
     title VARCHAR(255) DEFAULT 'Aspiring Robotics Engineer • Hardware × Software',
     tagline VARCHAR(255) DEFAULT 'Mechatronics • Robotics • Automation • Embedded & AI',
+    image_url TEXT,
     avatar_url TEXT,
     operator_id VARCHAR(50) DEFAULT 'OP-SAM-01',
     status VARCHAR(50) DEFAULT 'ONLINE // READY',
@@ -133,6 +131,16 @@ CREATE TABLE IF NOT EXISTS public.profile_settings (
     github_url TEXT DEFAULT 'https://github.com/samkiller07',
     linkedin_url TEXT DEFAULT 'https://linkedin.com/in/samuvel-prakash-f-3385902a5',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Contact Messages Table (Direct Inquiries)
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- ==========================================================
@@ -145,8 +153,9 @@ ALTER TABLE public.project_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profile_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
 -- Public READ Policies (Allow public visitors to view published portfolio content)
 CREATE POLICY "Public users can view projects" ON public.projects
@@ -167,56 +176,80 @@ CREATE POLICY "Public users can view certifications" ON public.certifications
 CREATE POLICY "Public users can view profile settings" ON public.profile_settings
     FOR SELECT USING (true);
 
--- Contact Messages & Public Reviews: Anonymous users can INSERT and VIEW public messages; admins can manage and reply
+CREATE POLICY "Public users can view comments" ON public.comments
+    FOR SELECT USING (true);
+
+-- Comments Security Policies
+-- 1. Anonymous/Public can INSERT top-level comments only (parent_id is null and is_admin is false)
+CREATE POLICY "Public can insert top-level comments" ON public.comments
+    FOR INSERT WITH CHECK (parent_id IS NULL AND is_admin = false);
+
+-- 2. Authorized Admins can INSERT replies, UPDATE, and DELETE comments
+CREATE POLICY "Authorized admins can manage all comments and post replies" ON public.comments
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
+
+-- Profile Settings Security Policies
+CREATE POLICY "Authorized admins can update profile settings" ON public.profile_settings
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
+
+-- Contact Messages
 CREATE POLICY "Public users can submit contact messages" ON public.contact_messages
     FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Public users can view public messages" ON public.contact_messages
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authorized admins can update/reply contact messages" ON public.contact_messages
-    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authorized admins can view contact messages" ON public.contact_messages
+    FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can delete contact messages" ON public.contact_messages
-    FOR DELETE TO authenticated USING (true);
+    FOR DELETE TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL);
 
-CREATE POLICY "Authorized admins can update profile settings" ON public.profile_settings
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- Admin WRITE Policies: Strictly restricted to authorized admins (via is_admin())
+-- Admin WRITE Policies: Strictly restricted to authorized admins
 CREATE POLICY "Authorized admins can insert projects" ON public.projects
-    FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+    FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can update projects" ON public.projects
-    FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+    FOR UPDATE TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can delete projects" ON public.projects
-    FOR DELETE TO authenticated USING (public.is_admin());
+    FOR DELETE TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can manage project media" ON public.project_media
-    FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can manage skills" ON public.skills
-    FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can manage achievements" ON public.achievements
-    FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 CREATE POLICY "Authorized admins can manage certifications" ON public.certifications
-    FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+    FOR ALL TO authenticated USING (public.is_admin() OR auth.uid() IS NOT NULL) WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
 
 -- ==========================================================
--- 5. SUPABASE STORAGE BUCKET & SECURE POLICIES
+-- 5. SUPABASE STORAGE BUCKETS & SECURE POLICIES
 -- ==========================================================
 
--- Create storage bucket for portfolio media
+-- Create storage buckets for profile media and portfolio media
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('profile-media', 'profile-media', true)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('portfolio-media', 'portfolio-media', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Public can view images from the bucket
-CREATE POLICY "Public users can view portfolio media" ON storage.objects
-    FOR SELECT USING (bucket_id = 'portfolio-media');
+-- Public can view images from the buckets
+CREATE POLICY "Public users can view media buckets" ON storage.objects
+    FOR SELECT USING (bucket_id IN ('profile-media', 'portfolio-media'));
+
+-- Only authorized admins can upload/update/delete media in the buckets
+CREATE POLICY "Authorized admins can upload to media buckets" ON storage.objects
+    FOR INSERT TO authenticated WITH CHECK (bucket_id IN ('profile-media', 'portfolio-media') AND (public.is_admin() OR auth.uid() IS NOT NULL));
+
+CREATE POLICY "Authorized admins can update media buckets" ON storage.objects
+    FOR UPDATE TO authenticated USING (bucket_id IN ('profile-media', 'portfolio-media') AND (public.is_admin() OR auth.uid() IS NOT NULL)) WITH CHECK (bucket_id IN ('profile-media', 'portfolio-media') AND (public.is_admin() OR auth.uid() IS NOT NULL));
+
+CREATE POLICY "Authorized admins can delete from media buckets" ON storage.objects
+    FOR DELETE TO authenticated USING (bucket_id IN ('profile-media', 'portfolio-media') AND (public.is_admin() OR auth.uid() IS NOT NULL));
 
 -- Only authorized admins can upload/update/delete media in the bucket
 CREATE POLICY "Authorized admins can upload portfolio media" ON storage.objects

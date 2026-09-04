@@ -1,20 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../components/ui/Button';
-import { messageService, ContactMessage } from '../services/messageService';
 import {
   Mail,
   Linkedin,
   Github,
-  Send,
   Terminal,
-  CheckCircle2,
   Copy,
   Check,
-  MessageSquare,
-  ShieldCheck,
-  Clock,
   Radio,
-  Sparkles
+  Send,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 
 const CONTACT_INFO = {
@@ -25,55 +21,25 @@ const CONTACT_INFO = {
 };
 
 export const ContactSection: React.FC = () => {
-  const [name, setName] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successToast, setSuccessToast] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const [messages, setMessages] = useState<ContactMessage[]>(messageService.getLocalMessages());
-
-  const loadMessages = async () => {
-    try {
-      const msgs = await messageService.getPublicMessages();
-      setMessages(msgs);
-    } catch (err) {
-      console.error('Error fetching transmissions:', err);
-    }
-  };
-
-  useEffect(() => {
-    loadMessages();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !message.trim()) return;
-
-    setIsSubmitting(true);
-
-    try {
-      // Direct post to database / feed without mail client
-      await messageService.submitMessage({
-        name: name.trim(),
-        message: message.trim()
-      });
-
-      setName('');
-      setMessage('');
-      setSuccessToast(true);
-      setTimeout(() => setSuccessToast(false), 4000);
-      await loadMessages();
-    } catch (err) {
-      console.error('Transmission submit error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [isSent, setIsSent] = useState(false);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(CONTACT_INFO.email);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2500);
+  };
+
+  const handleDirectEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    const mailSubject = encodeURIComponent(`[Portfolio Inquiry] ${subject || 'Engineering Discussion'} - ${senderName}`);
+    const mailBody = encodeURIComponent(`Name: ${senderName}\nEmail: ${senderEmail}\n\nMessage:\n${message}`);
+    window.location.href = `mailto:${CONTACT_INFO.email}?subject=${mailSubject}&body=${mailBody}`;
+    setIsSent(true);
   };
 
   return (
@@ -83,11 +49,11 @@ export const ContactSection: React.FC = () => {
         {/* Section Header */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-widest">
-            <span className="w-2 h-2 bg-hud-green rounded-full animate-ping" />
-            <span>06 // COMMS UPLINK &bull; DIRECT CONTACT &amp; COMMUNITY TRANSMISSIONS</span>
+            <span className="w-2 h-2 bg-hud-green rounded-full" />
+            <span>07 // COMMS UPLINK &bull; DIRECT REACHABILITY</span>
           </div>
           <h2 className="font-tech text-3xl sm:text-4xl font-bold uppercase tracking-wide text-hud-bright">
-            CONNECT &amp; TRANSMIT
+            CONNECT &amp; INITIATE TRANSMISSION
           </h2>
           <div className="circuit-line-h w-48" />
         </div>
@@ -100,10 +66,10 @@ export const ContactSection: React.FC = () => {
             <div className="bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm space-y-4 hud-corner">
               <div className="font-mono text-xs text-hud-green uppercase tracking-wider flex items-center gap-2">
                 <Terminal className="w-4 h-4" />
-                <span>DIRECT REACHABILITY</span>
+                <span>OFFICIAL CHANNELS</span>
               </div>
               <p className="text-xs sm:text-sm text-hud-slate leading-relaxed font-sans">
-                Open to full-time roles, robotics R&amp;D engineering positions, industrial automation internships, and ambitious mechatronics collaborations.
+                Open to full-time engineering roles, robotics R&amp;D positions, industrial automation internships, and ambitious mechatronics collaborations.
               </p>
 
               <div className="space-y-3 pt-2">
@@ -174,126 +140,115 @@ export const ContactSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Simplified Comment / Transmission Box */}
+          {/* Right: Direct Email Dispatch */}
           <div className="lg:col-span-7 bg-hud-card border border-hud-border p-5 sm:p-6 rounded-sm shadow-xl hud-corner space-y-4">
             <div className="pb-3 border-b border-hud-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-wider font-bold">
                 <Radio className="w-4 h-4 text-hud-green animate-pulse" />
-                <span className="font-mono text-xs text-hud-green tracking-widest uppercase">
-                  LEAVE A PUBLIC TRANSMISSION / COMMENT
-                </span>
+                <span>DIRECT INQUIRY // INITIATE COMMS</span>
               </div>
-              <span className="text-[10px] font-mono text-hud-muted">DIRECT BROADCAST</span>
+              <span className="text-[10px] font-mono text-hud-muted">DIRECT MAIL</span>
             </div>
 
-            {/* Success Notification */}
-            {successToast && (
-              <div className="p-3 bg-hud-green/10 border border-hud-green/50 text-hud-green rounded-sm flex items-center gap-2 font-mono text-xs animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>[TRANSMISSION LOGGED] Your comment is now live on the public feed!</span>
-              </div>
-            )}
-
-            {/* Clean 2-Field Form */}
-            <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
-              <div className="space-y-1.5">
-                <label className="text-hud-muted uppercase tracking-wider block">
-                  YOUR NAME / CALLSIGN *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alex (Engineering Lead) / Recruiter / Fellow Engineer"
-                  className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-hud-muted uppercase tracking-wider block">
-                  TRANSMISSION MESSAGE / COMMENT *
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Share a thought, project feedback, collaboration note, or inquiry..."
-                  className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none focus:ring-1 focus:ring-hud-green resize-y"
-                />
-              </div>
-
-              <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="text-[10px] text-hud-muted">
-                  * Instantly published to the public telemetry transmission board
-                </div>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  disabled={isSubmitting || !name.trim() || !message.trim()}
-                  icon={<Send className="w-3.5 h-3.5" />}
-                  iconPosition="right"
-                >
-                  {isSubmitting ? 'BROADCASTING...' : 'POST TRANSMISSION'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* Public Transmission Logs & Comments Stream */}
-        <div className="pt-4 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-hud-border">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-hud-cyan" />
-              <span className="font-tech text-base sm:text-lg font-bold text-hud-bright uppercase tracking-wide">
-                TRANSMISSION LOGS &amp; COMMUNITY REVIEWS ({messages.length})
-              </span>
-            </div>
-            <div className="text-xs font-mono text-hud-muted">
-              LIVE BROADCAST STREAM
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className="bg-hud-card border border-hud-border rounded-sm p-4 sm:p-5 space-y-3 font-mono text-xs relative hud-corner hover:border-hud-border-bright transition-colors"
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 border-b border-hud-border pb-2.5">
-                  <div className="font-bold text-hud-bright flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-hud-cyan rounded-full" />
-                    <span>{msg.name}</span>
-                  </div>
-                  <div className="text-[10px] text-hud-muted flex items-center gap-1 flex-shrink-0">
-                    <Clock className="w-3 h-3" />
-                    <span>{new Date(msg.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                {/* Message Body */}
-                <p className="text-hud-slate font-sans text-xs sm:text-sm leading-relaxed">
-                  "{msg.message}"
+            {isSent ? (
+              <div className="p-8 bg-hud-panel border border-hud-green/50 rounded-sm text-center space-y-3 font-mono">
+                <CheckCircle2 className="w-10 h-10 text-hud-green mx-auto" />
+                <h3 className="font-tech text-lg font-bold text-hud-green uppercase">
+                  EMAIL CLIENT OPENED
+                </h3>
+                <p className="text-xs text-hud-slate max-w-md mx-auto">
+                  Your message has been formatted and queued for direct transmission to <span className="text-hud-bright">{CONTACT_INFO.email}</span>.
                 </p>
-
-                {/* Verified Admin / Operator Reply */}
-                {msg.admin_reply && (
-                  <div className="mt-3 p-3 bg-hud-panel border-l-2 border-hud-green rounded-r-sm space-y-1">
-                    <div className="flex items-center gap-1.5 text-[10px] text-hud-green font-bold uppercase tracking-wider">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>OPERATOR RESPONSE // SAMUVEL PRAKASH F</span>
-                    </div>
-                    <p className="text-xs font-sans text-hud-bright leading-relaxed pl-1">
-                      {msg.admin_reply}
-                    </p>
-                  </div>
-                )}
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsSent(false);
+                      setSubject('');
+                      setMessage('');
+                    }}
+                  >
+                    SEND ANOTHER INQUIRY
+                  </Button>
+                </div>
               </div>
-            ))}
+            ) : (
+              <form onSubmit={handleDirectEmail} className="space-y-4 font-mono text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-hud-muted uppercase tracking-wider block">
+                      YOUR NAME *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="e.g. Hiring Manager / Engineering Lead"
+                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-hud-muted uppercase tracking-wider block">
+                      YOUR EMAIL ADDRESS *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={senderEmail}
+                      onChange={(e) => setSenderEmail(e.target.value)}
+                      placeholder="name@organization.com"
+                      className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-hud-muted uppercase tracking-wider block">
+                    INQUIRY SUBJECT *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="e.g. Robotics Engineering Role / Technical Collaboration"
+                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-hud-muted uppercase tracking-wider block">
+                    MESSAGE PAYLOAD *
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Provide details about your project specifications or role..."
+                    className="w-full p-2.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+                  />
+                </div>
+
+                <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="text-[10px] text-hud-muted">
+                    * Direct transmission to {CONTACT_INFO.email}
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    icon={<Send className="w-3.5 h-3.5" />}
+                    iconPosition="right"
+                  >
+                    SEND DIRECT INQUIRY
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
 

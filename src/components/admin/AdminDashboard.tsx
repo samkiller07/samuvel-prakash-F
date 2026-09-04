@@ -3,7 +3,7 @@ import { Project, ProjectFormData } from '../../types/project';
 import { projectService } from '../../services/projectService';
 import { authService, UserSession } from '../../services/authService';
 import { profileService, ProfileData } from '../../services/profileService';
-import { messageService, ContactMessage } from '../../services/messageService';
+import { commentService, CommentItem } from '../../services/commentService';
 import { AdminProjectForm } from './AdminProjectForm';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -30,7 +30,9 @@ import {
   MessageSquare,
   Reply,
   Radio,
-  Clock
+  Clock,
+  CornerDownRight,
+  ShieldCheck
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -40,7 +42,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogout, onExit }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'messages'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'comments'>('profile');
   
   // Projects state
   const [projects, setProjects] = useState<Project[]>([]);
@@ -51,46 +53,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Profile state
-  const [profile, setProfile] = useState<ProfileData>(profileService.getLocalProfile());
-  const [profileFormData, setProfileFormData] = useState<ProfileData>(profileService.getLocalProfile());
+  const [profile, setProfile] = useState<ProfileData>(profileService.getDefaultProfile());
+  const [profileFormData, setProfileFormData] = useState<ProfileData>(profileService.getDefaultProfile());
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
-  // Messages / Reviews state
-  const [messages, setMessages] = useState<ContactMessage[]>(messageService.getLocalMessages());
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  const [replyingMessageId, setReplyingMessageId] = useState<string | null>(null);
+  // Comments state
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(true);
+  const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
-  // General Notification
+  // Notifications
   const [notification, setNotification] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const notify = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4000);
   };
 
+  const notifyError = (msg: string) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(null), 6000);
+  };
+
   const loadAllData = async () => {
     setIsLoadingProjects(true);
-    setIsLoadingMessages(true);
+    setIsLoadingComments(true);
 
     try {
-      const [projRes, profData, msgsData] = await Promise.all([
+      const [projRes, profData, comRes] = await Promise.all([
         projectService.getAllProjects(),
         profileService.getProfile(),
-        messageService.getPublicMessages()
+        commentService.getComments()
       ]);
 
       setProjects(projRes.data);
       setProfile(profData);
       setProfileFormData(profData);
-      setMessages(msgsData);
+      setComments(comRes.data);
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {
       setIsLoadingProjects(false);
-      setIsLoadingMessages(false);
+      setIsLoadingComments(false);
     }
   };
 
@@ -98,46 +108,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     loadAllData();
   }, []);
 
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl && avatarPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
+
   // Profile Handlers
-  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploadingAvatar(true);
-    try {
-      const res = await profileService.uploadAvatar(file);
-      if (res.success && res.url) {
-        setProfile((prev) => ({ ...prev, avatar_url: res.url! }));
-        setProfileFormData((prev) => ({ ...prev, avatar_url: res.url! }));
-        notify('Operator photo uploaded & updated successfully!');
-      } else {
-        notify(`Upload warning: ${res.error || 'Failed to upload photo'}`);
-      }
-    } catch (err: any) {
-      notify(`Upload failed: ${err.message}`);
-    } finally {
-      setIsUploadingAvatar(false);
-      if (e.target) e.target.value = '';
+    // Temporary local preview ONLY
+    if (avatarPreviewUrl && avatarPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(avatarPreviewUrl);
     }
+    const preview = URL.createObjectURL(file);
+    setSelectedAvatarFile(file);
+    setAvatarPreviewUrl(preview);
+    notify('Photo selected. Click "SAVE & APPLY CHANGES" to upload to Supabase Storage.');
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
+
     try {
-      const res = await profileService.updateProfile(profileFormData);
-      if (res.success && res.data) {
-        setProfile(res.data);
-        notify('Operator profile configuration saved successfully!');
+      if (selectedAvatarFile) {
+        // Upload File object to Supabase Storage and persist to database
+        const res = await profileService.uploadAndSaveAvatar(selectedAvatarFile, profileFormData);
+        if (res.success && res.data) {
+          setProfile(res.data);
+          setProfileFormData(res.data);
+          setSelectedAvatarFile(null);
+          setAvatarPreviewUrl(null);
+          notify('Operator photo uploaded to Supabase Storage and profile saved successfully!');
+        } else {
+          notifyError(`Photo upload error: ${res.error || 'Failed to upload photo.'}`);
+        }
+      } else {
+        // Update database table directly
+        const res = await profileService.updateProfile(profileFormData);
+        if (res.success && res.data) {
+          setProfile(res.data);
+          notify('Operator profile configuration saved to database successfully!');
+        } else {
+          notifyError(`Database save error: ${res.error}`);
+        }
       }
     } catch (err: any) {
-      notify(`Profile save error: ${err.message}`);
+      notifyError(`Profile update exception: ${err.message}`);
     } finally {
       setIsSavingProfile(false);
     }
   };
 
-  // Projects Handlers
+  // Project Handlers
   const handleOpenCreateProject = () => {
     setEditingProject(null);
     setIsFormModalOpen(true);
@@ -163,7 +192,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       const res = await projectService.getAllProjects();
       setProjects(res.data);
     } catch (err: any) {
-      notify(`Error: ${err.message}`);
+      notifyError(`Project error: ${err.message}`);
     } finally {
       setIsSavingProject(false);
     }
@@ -177,7 +206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       const res = await projectService.getAllProjects();
       setProjects(res.data);
     } catch (err: any) {
-      notify(`Error: ${err.message}`);
+      notifyError(`Error deleting project: ${err.message}`);
     }
   };
 
@@ -189,37 +218,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     }
   };
 
-  // Message / Review Reply Handlers
-  const handleStartReply = (msg: ContactMessage) => {
-    setReplyingMessageId(msg.id);
-    setReplyText(msg.admin_reply || '');
+  // Comment Handlers
+  const handleStartReply = (comment: CommentItem) => {
+    setReplyingCommentId(comment.id);
+    setReplyText('');
   };
 
-  const handleSendReply = async (id: string) => {
+  const handleSendReply = async (parentId: string) => {
     if (!replyText.trim()) return;
     setIsSubmittingReply(true);
+
     try {
-      const res = await messageService.replyToMessage(id, replyText);
+      const res = await commentService.postAdminReply(parentId, replyText, profile.name || 'SAMUVEL PRAKASH F');
       if (res.success) {
-        notify('Operator reply posted to public transmission feed!');
-        setReplyingMessageId(null);
+        notify('Admin reply published to Supabase database!');
+        setReplyingCommentId(null);
         setReplyText('');
-        const updated = await messageService.getPublicMessages();
-        setMessages(updated);
+        const updated = await commentService.getComments();
+        setComments(updated.data);
+      } else {
+        notifyError(`Reply error: ${res.error}`);
       }
     } catch (err: any) {
-      notify(`Reply error: ${err.message}`);
+      notifyError(`Reply exception: ${err.message}`);
     } finally {
       setIsSubmittingReply(false);
     }
   };
 
-  const handleDeleteMessage = async (id: string) => {
-    if (window.confirm('Delete this transmission from the public log?')) {
-      await messageService.deleteMessage(id);
-      notify('Transmission removed.');
-      const updated = await messageService.getPublicMessages();
-      setMessages(updated);
+  const handleDeleteComment = async (id: string) => {
+    if (window.confirm('Permanently delete this comment and its replies from the database?')) {
+      const res = await commentService.deleteComment(id);
+      if (res.success) {
+        notify('Comment deleted from database.');
+        const updated = await commentService.getComments();
+        setComments(updated.data);
+      } else {
+        notifyError(`Delete error: ${res.error}`);
+      }
     }
   };
 
@@ -256,11 +292,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           </div>
         </div>
 
-        {/* Notification Toast */}
+        {/* Notifications */}
         {notification && (
           <div className="p-3 bg-hud-green/10 border border-hud-green/50 text-hud-green rounded-sm flex items-center gap-2 animate-fadeIn">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             <span>{notification}</span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="p-3 bg-hud-red/10 border border-hud-red/50 text-hud-red rounded-sm flex items-center gap-2 animate-fadeIn">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -291,15 +334,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           </button>
 
           <button
-            onClick={() => setActiveTab('messages')}
+            onClick={() => setActiveTab('comments')}
             className={`px-4 py-2 rounded-sm font-tech font-bold uppercase transition-all flex items-center gap-2 ${
-              activeTab === 'messages'
+              activeTab === 'comments'
                 ? 'bg-hud-green text-black shadow-lg shadow-hud-green/20'
                 : 'bg-hud-card text-hud-slate hover:text-hud-bright hover:bg-hud-panel'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>TRANSMISSION REVIEWS ({messages.length})</span>
+            <span>COMMENTS &amp; REPLIES ({comments.length})</span>
           </button>
         </div>
 
@@ -312,14 +355,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
               <div className="flex items-center justify-between pb-3 border-b border-hud-border text-left">
                 <div className="font-tech text-base font-bold text-hud-bright uppercase flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-hud-green" />
-                  <span>LIVE HUD OPERATOR FRAME</span>
+                  <span>HUD OPERATOR FRAME</span>
                 </div>
-                <span className="text-[10px] text-hud-green">HERO DISPLAY</span>
+                <span className="text-[10px] text-hud-green">
+                  {profile.image_url ? 'SUPABASE CLOUD URL' : 'NO PHOTO UPLOADED'}
+                </span>
               </div>
 
               <div className="flex justify-center py-2">
                 <OperatorAvatar
-                  avatarUrl={profileFormData.avatar_url || profile.avatar_url}
+                  avatarUrl={avatarPreviewUrl || profile.image_url || profile.avatar_url}
                   name={profileFormData.name}
                   operatorId={profileFormData.operator_id}
                   statusText={profileFormData.status}
@@ -335,7 +380,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
                     onChange={handleAvatarFileSelect}
-                    disabled={isUploadingAvatar}
+                    disabled={isSavingProfile}
                     className="block w-full text-xs text-hud-slate
                       file:mr-3 file:py-2 file:px-4
                       file:rounded-sm file:border-0
@@ -346,7 +391,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                   />
                 </label>
                 <div className="text-[10px] text-hud-muted">
-                  {isUploadingAvatar ? 'UPLOADING TO SUPABASE STORAGE...' : 'SUPPORTED: JPG, PNG, WEBP (MAX 5MB)'}
+                  Formats: JPG, PNG, WEBP (Max 5MB) &bull; Persisted to Supabase Storage
                 </div>
               </div>
             </div>
@@ -357,7 +402,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                 <div className="font-tech text-base font-bold text-hud-bright uppercase">
                   OPERATOR METADATA SPECIFICATIONS
                 </div>
-                <span className="text-[10px] text-hud-slate">PERSISTED TO SUPABASE</span>
+                <span className="text-[10px] text-hud-slate">SUPABASE TABLE: profile_settings</span>
               </div>
 
               <form onSubmit={handleSaveProfile} className="space-y-4 text-xs font-mono">
@@ -426,7 +471,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                     disabled={isSavingProfile}
                     icon={<Save className="w-4 h-4" />}
                   >
-                    {isSavingProfile ? 'SAVING SPECIFICATIONS...' : 'SAVE & APPLY CHANGES'}
+                    {isSavingProfile ? 'UPLOADING & SAVING TO SUPABASE...' : 'SAVE & APPLY CHANGES'}
                   </Button>
                 </div>
               </form>
@@ -524,99 +569,129 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           </div>
         )}
 
-        {/* TAB 3: TRANSMISSION REVIEWS & LOGS */}
-        {activeTab === 'messages' && (
+        {/* TAB 3: COMMENTS & REPLIES MANAGER */}
+        {activeTab === 'comments' && (
           <div className="bg-hud-card border border-hud-border rounded-sm p-6 space-y-6 hud-corner">
             <div className="flex items-center justify-between pb-3 border-b border-hud-border">
               <div className="font-tech text-base font-bold text-hud-bright uppercase flex items-center gap-2">
                 <Radio className="w-4 h-4 text-hud-green animate-pulse" />
-                <span>COMMUNICATIONS &amp; PUBLIC TRANSMISSION LOGS</span>
+                <span>COMMUNITY COMMENTS &amp; REPLIES MANAGER</span>
               </div>
-              <span className="text-[10px] text-hud-slate">{messages.length} RECORDED ENTRIES</span>
+              <span className="text-[10px] text-hud-slate">SUPABASE TABLE: comments</span>
             </div>
 
-            <div className="space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-3 font-mono"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-hud-border pb-2">
-                    <div>
-                      <span className="text-hud-bright font-bold">{msg.name}</span>
-                      {msg.email && <span className="text-hud-slate ml-2 text-[10px]">({msg.email})</span>}
-                      <div className="text-hud-green text-[11px] font-semibold">{msg.subject}</div>
-                    </div>
-                    <div className="text-[10px] text-hud-muted flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(msg.created_at).toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs font-sans text-hud-text leading-relaxed">
-                    "{msg.message}"
-                  </p>
-
-                  {/* Existing Reply */}
-                  {msg.admin_reply && (
-                    <div className="p-3 bg-hud-card border-l-2 border-hud-green rounded-r-sm text-xs space-y-1">
-                      <div className="text-[10px] text-hud-green font-bold uppercase">
-                        OPERATOR REPLY:
+            {isLoadingComments ? (
+              <div className="p-12 text-center text-hud-muted">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-hud-green" />
+                <span>FETCHING COMMENTS FROM SUPABASE...</span>
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="p-12 text-center text-hud-muted">
+                No visitor comments recorded in database yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-3 font-mono"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-hud-border pb-2">
+                      <div>
+                        <span className="text-hud-bright font-bold">{item.name}</span>
+                        <span className="text-hud-slate ml-2 text-[10px]">ID: {item.id.slice(0, 8)}</span>
                       </div>
-                      <p className="font-sans text-hud-bright">{msg.admin_reply}</p>
+                      <div className="text-[10px] text-hud-muted flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{new Date(item.created_at).toLocaleString()}</span>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Action buttons / Reply Input */}
-                  <div className="pt-2 flex flex-col gap-2">
-                    {replyingMessageId === msg.id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          rows={3}
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Type public operator response..."
-                          className="w-full p-2 bg-hud-bg border border-hud-green text-hud-bright rounded-sm text-xs focus:outline-none"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="ghost" size="sm" onClick={() => setReplyingMessageId(null)}>
-                            CANCEL
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            disabled={isSubmittingReply}
-                            onClick={() => handleSendReply(msg.id)}
-                            icon={<Reply className="w-3.5 h-3.5" />}
+                    <p className="text-xs font-sans text-hud-text leading-relaxed whitespace-pre-wrap">
+                      "{item.comment}"
+                    </p>
+
+                    {/* Existing Replies */}
+                    {item.replies && item.replies.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        {item.replies.map((reply) => (
+                          <div
+                            key={reply.id}
+                            className="p-3 bg-hud-card border-l-2 border-hud-green rounded-r-sm text-xs space-y-1 ml-4"
                           >
-                            {isSubmittingReply ? 'POSTING...' : 'PUBLISH OPERATOR REPLY'}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStartReply(msg)}
-                          icon={<Reply className="w-3.5 h-3.5" />}
-                        >
-                          {msg.admin_reply ? 'EDIT REPLY' : 'REPLY TO TRANSMISSION'}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteMessage(msg.id)}
-                          icon={<Trash2 className="w-3.5 h-3.5" />}
-                        >
-                          DELETE
-                        </Button>
+                            <div className="flex items-center justify-between">
+                              <div className="text-[10px] text-hud-green font-bold uppercase flex items-center gap-1">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>{reply.name} [OPERATOR REPLY]:</span>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteComment(reply.id)}
+                                className="text-hud-muted hover:text-hud-red p-1"
+                                title="Delete this reply"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <p className="font-sans text-hud-bright whitespace-pre-wrap">{reply.comment}</p>
+                          </div>
+                        ))}
                       </div>
                     )}
+
+                    {/* Reply Form or Action Buttons */}
+                    <div className="pt-2 flex flex-col gap-2">
+                      {replyingCommentId === item.id ? (
+                        <div className="space-y-2">
+                          <div className="text-[10px] text-hud-green font-bold">
+                            REPLYING AS OPERATOR ({profile.name || 'SAMUVEL PRAKASH F'}):
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            placeholder="Type operator response (stored in Supabase with parent_id)..."
+                            className="w-full p-2 bg-hud-bg border border-hud-green text-hud-bright rounded-sm text-xs focus:outline-none"
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="ghost" size="sm" onClick={() => setReplyingCommentId(null)}>
+                              CANCEL
+                            </Button>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              disabled={isSubmittingReply}
+                              onClick={() => handleSendReply(item.id)}
+                              icon={<Reply className="w-3.5 h-3.5" />}
+                            >
+                              {isSubmittingReply ? 'POSTING TO SUPABASE...' : 'POST OPERATOR REPLY'}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStartReply(item)}
+                            icon={<Reply className="w-3.5 h-3.5" />}
+                          >
+                            REPLY
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteComment(item.id)}
+                            icon={<Trash2 className="w-3.5 h-3.5" />}
+                          >
+                            DELETE
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

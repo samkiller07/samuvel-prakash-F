@@ -7,6 +7,7 @@ import { SkillsSection } from './sections/SkillsSection';
 import { ProjectsSection } from './sections/ProjectsSection';
 import { AchievementsSection } from './sections/AchievementsSection';
 import { CertificationsSection } from './sections/CertificationsSection';
+import { CommentsSection } from './sections/CommentsSection';
 import { ContactSection } from './sections/ContactSection';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -136,6 +137,7 @@ export const App: React.FC = () => {
           <ProjectsSection />
           <AchievementsSection />
           <CertificationsSection />
+          <CommentsSection />
           <ContactSection />
         </main>
       )}

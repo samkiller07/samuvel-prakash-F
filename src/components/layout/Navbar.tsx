@@ -45,7 +45,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'projects', label: '03 PROJECTS' },
     { id: 'achievements', label: '04 AWARDS' },
     { id: 'certifications', label: '05 CERTS' },
-    { id: 'contact', label: '06 CONTACT' }
+    { id: 'comments', label: '06 REVIEWS' },
+    { id: 'contact', label: '07 CONTACT' }
   ];
 
   const handleNavClick = (id: string) => {

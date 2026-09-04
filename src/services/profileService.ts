@@ -5,6 +5,7 @@ export interface ProfileData {
   name: string;
   title: string;
   tagline: string;
+  image_url: string;
   avatar_url: string;
   operator_id: string;
   status: string;
@@ -13,12 +14,11 @@ export interface ProfileData {
   linkedin_url: string;
 }
 
-const STORAGE_KEY = 'samuvel_portfolio_profile';
-
 export const DEFAULT_PROFILE: ProfileData = {
   name: 'Samuvel Prakash F',
   title: 'Aspiring Robotics Engineer • Hardware × Software',
   tagline: 'Mechatronics • Robotics • Automation • Embedded & AI',
+  image_url: '',
   avatar_url: '',
   operator_id: 'OP-SAM-01',
   status: 'ONLINE // READY',
@@ -29,28 +29,25 @@ export const DEFAULT_PROFILE: ProfileData = {
 
 export const profileService = {
   /**
-   * Get cached or fallback profile data instantly
+   * Default safe profile configuration (bundled fallback)
    */
-  getLocalProfile(): ProfileData {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
-      }
-    } catch {
-      // Ignore localStorage read errors
-    }
-    return DEFAULT_PROFILE;
+  getDefaultProfile(): ProfileData {
+    return { ...DEFAULT_PROFILE };
   },
 
   /**
-   * Fetch profile from Supabase with fallback to local storage
+   * Alias for synchronous fallback initial state
+   */
+  getLocalProfile(): ProfileData {
+    return this.getDefaultProfile();
+  },
+
+  /**
+   * Fetch profile from Supabase PostgreSQL table `profile_settings`
    */
   async getProfile(): Promise<ProfileData> {
-    const local = this.getLocalProfile();
-
     if (!isSupabaseConfigured() || !supabase) {
-      return local;
+      return this.getDefaultProfile();
     }
 
     try {
@@ -61,96 +58,124 @@ export const profileService = {
         .maybeSingle();
 
       if (error || !data) {
-        return local;
+        return this.getDefaultProfile();
       }
 
-      const merged: ProfileData = {
-        name: data.name || local.name,
-        title: data.title || local.title,
-        tagline: data.tagline || local.tagline,
-        avatar_url: data.avatar_url || local.avatar_url,
-        operator_id: data.operator_id || local.operator_id,
-        status: data.status || local.status,
-        bio: data.bio || local.bio,
-        github_url: data.github_url || local.github_url,
-        linkedin_url: data.linkedin_url || local.linkedin_url
+      const imageUrl = data.image_url || data.avatar_url || '';
+
+      return {
+        name: data.name || DEFAULT_PROFILE.name,
+        title: data.title || DEFAULT_PROFILE.title,
+        tagline: data.tagline || DEFAULT_PROFILE.tagline,
+        image_url: imageUrl,
+        avatar_url: imageUrl,
+        operator_id: data.operator_id || DEFAULT_PROFILE.operator_id,
+        status: data.status || DEFAULT_PROFILE.status,
+        bio: data.bio || DEFAULT_PROFILE.bio,
+        github_url: data.github_url || DEFAULT_PROFILE.github_url,
+        linkedin_url: data.linkedin_url || DEFAULT_PROFILE.linkedin_url
       };
-
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      } catch {
-        // Storage full/disabled
-      }
-
-      return merged;
     } catch (err) {
-      console.warn('Could not fetch remote profile:', err);
-      return local;
+      console.warn('Could not fetch remote profile from Supabase:', err);
+      return this.getDefaultProfile();
     }
   },
 
   /**
-   * Save updated profile to Supabase and cache locally
+   * Upload an actual File object to Supabase Storage and persist the public URL into profile_settings table
+   */
+  async uploadAndSaveAvatar(
+    file: File,
+    additionalMetadata?: Partial<ProfileData>
+  ): Promise<{ success: boolean; data?: ProfileData; url?: string; error?: string }> {
+    // 1. Upload file to Supabase Storage
+    const uploadRes = await storageService.uploadProjectImage(file, 'avatar', 'profile-media');
+    if (!uploadRes.success || !uploadRes.url) {
+      return {
+        success: false,
+        error: uploadRes.error || 'Failed to upload photo to Supabase Storage.'
+      };
+    }
+
+    const publicUrl = uploadRes.url;
+
+    // 2. Persist to Supabase Database
+    const current = await this.getProfile();
+    const updated: ProfileData = {
+      ...current,
+      ...(additionalMetadata || {}),
+      image_url: publicUrl,
+      avatar_url: publicUrl
+    };
+
+    const dbRes = await this.updateProfile(updated);
+    if (!dbRes.success) {
+      return {
+        success: false,
+        url: publicUrl,
+        error: dbRes.error || 'Photo uploaded but failed to update database table.'
+      };
+    }
+
+    return {
+      success: true,
+      url: publicUrl,
+      data: updated
+    };
+  },
+
+  /**
+   * Save updated profile metadata to Supabase PostgreSQL table `profile_settings`
    */
   async updateProfile(profile: Partial<ProfileData>): Promise<{ success: boolean; data?: ProfileData; error?: string }> {
-    const current = await this.getProfile();
-    const updated: ProfileData = { ...current, ...profile };
-
-    // Update local cache immediately
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // Ignore
-    }
-
     if (!isSupabaseConfigured() || !supabase) {
-      return { success: true, data: updated };
+      return {
+        success: false,
+        error: 'Supabase is not configured. Unable to save profile to database.'
+      };
     }
 
     try {
-      const { error } = await supabase
+      const current = await this.getProfile();
+      const imageUrl = profile.image_url || profile.avatar_url || current.image_url;
+
+      const payload = {
+        id: 'default',
+        name: profile.name ?? current.name,
+        title: profile.title ?? current.title,
+        tagline: profile.tagline ?? current.tagline,
+        image_url: imageUrl,
+        avatar_url: imageUrl,
+        operator_id: profile.operator_id ?? current.operator_id,
+        status: profile.status ?? current.status,
+        bio: profile.bio ?? current.bio,
+        github_url: profile.github_url ?? current.github_url,
+        linkedin_url: profile.linkedin_url ?? current.linkedin_url,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
         .from('profile_settings')
-        .upsert({
-          id: 'default',
-          ...updated,
-          updated_at: new Date().toISOString()
-        });
+        .upsert(payload)
+        .select()
+        .single();
 
       if (error) {
-        console.warn('Remote profile update warning (persisted locally):', error.message);
-        return { success: true, data: updated, error: error.message };
+        console.error('Database profile update error:', error);
+        return { success: false, error: error.message };
       }
 
-      return { success: true, data: updated };
+      return {
+        success: true,
+        data: {
+          ...payload,
+          image_url: data?.image_url || payload.image_url,
+          avatar_url: data?.avatar_url || payload.avatar_url
+        }
+      };
     } catch (err: any) {
-      console.warn('Profile update exception (persisted locally):', err);
-      return { success: true, data: updated, error: err.message };
+      console.error('Profile update exception:', err);
+      return { success: false, error: err.message || 'Database transaction error.' };
     }
-  },
-
-  /**
-   * Upload avatar image file to Supabase Storage and update profile
-   */
-  async uploadAvatar(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
-    const uploadRes = await storageService.uploadProjectImage(file, 'avatar');
-
-    if (!uploadRes.success || !uploadRes.url) {
-      // If Supabase Storage fails, convert to data URL as local fallback
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const dataUrl = reader.result as string;
-          await this.updateProfile({ avatar_url: dataUrl });
-          resolve({ success: true, url: dataUrl });
-        };
-        reader.onerror = () => {
-          resolve({ success: false, error: uploadRes.error || 'Failed to read image file.' });
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    await this.updateProfile({ avatar_url: uploadRes.url });
-    return { success: true, url: uploadRes.url };
   }
 };

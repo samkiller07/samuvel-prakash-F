@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export const BUCKET_NAME = 'portfolio-media';
+export const DEFAULT_BUCKET = 'profile-media';
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
@@ -13,9 +13,13 @@ export interface UploadResult {
 
 export const storageService = {
   /**
-   * Upload an image file to Supabase Storage bucket 'portfolio-media'.
+   * Upload an image file to Supabase Storage bucket (defaults to 'profile-media').
    */
-  async uploadProjectImage(file: File, folder: string = 'projects'): Promise<UploadResult> {
+  async uploadProjectImage(
+    file: File,
+    folder: string = 'avatar',
+    bucket: string = DEFAULT_BUCKET
+  ): Promise<UploadResult> {
     // 1. Validation: File size
     if (file.size > MAX_FILE_SIZE_BYTES) {
       return {
@@ -44,23 +48,37 @@ export const storageService = {
       const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
       const filePath = `${folder}/${Date.now()}_${cleanName}`;
 
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
+      // Try designated bucket, fallback to 'portfolio-media' if bucket doesn't exist
+      let uploadBucket = bucket;
+      let { data, error } = await supabase.storage
+        .from(uploadBucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
-      if (error) {
+      if (error && uploadBucket !== 'portfolio-media') {
+        uploadBucket = 'portfolio-media';
+        const retry = await supabase.storage
+          .from(uploadBucket)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+        data = retry.data;
+        error = retry.error;
+      }
+
+      if (error || !data) {
         console.error('Supabase storage upload error:', error);
         return {
           success: false,
-          error: error.message || 'Failed to upload image to Supabase Storage.'
+          error: error?.message || 'Failed to upload image to Supabase Storage.'
         };
       }
 
       const { data: publicData } = supabase.storage
-        .from(BUCKET_NAME)
+        .from(uploadBucket)
         .getPublicUrl(data.path);
 
       return {
@@ -80,10 +98,10 @@ export const storageService = {
   /**
    * Delete an image from Supabase Storage by path
    */
-  async deleteImage(path: string): Promise<{ success: boolean; error?: string }> {
+  async deleteImage(path: string, bucket: string = DEFAULT_BUCKET): Promise<{ success: boolean; error?: string }> {
     if (isSupabaseConfigured() && supabase && path) {
       try {
-        const { error } = await supabase.storage.from(BUCKET_NAME).remove([path]);
+        const { error } = await supabase.storage.from(bucket).remove([path]);
         if (error) {
           return { success: false, error: error.message };
         }
