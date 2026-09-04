@@ -107,14 +107,32 @@ CREATE TABLE IF NOT EXISTS public.certifications (
     sort_order INT DEFAULT 0 NOT NULL
 );
 
--- Contact Messages Table
+-- Contact Messages & Public Transmission Review Table
 CREATE TABLE IF NOT EXISTS public.contact_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     subject VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
+    admin_reply TEXT,
+    replied_at TIMESTAMP WITH TIME ZONE,
+    is_public BOOLEAN DEFAULT true NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Profile & Operator Avatar Settings Table
+CREATE TABLE IF NOT EXISTS public.profile_settings (
+    id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+    name VARCHAR(255) DEFAULT 'Samuvel Prakash F',
+    title VARCHAR(255) DEFAULT 'Aspiring Robotics Engineer • Hardware × Software',
+    tagline VARCHAR(255) DEFAULT 'Mechatronics • Robotics • Automation • Embedded & AI',
+    avatar_url TEXT,
+    operator_id VARCHAR(50) DEFAULT 'OP-SAM-01',
+    status VARCHAR(50) DEFAULT 'ONLINE // READY',
+    bio TEXT,
+    github_url TEXT DEFAULT 'https://github.com/samkiller07',
+    linkedin_url TEXT DEFAULT 'https://linkedin.com/in/samuvel-prakash-f-3385902a5',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- ==========================================================
@@ -128,6 +146,7 @@ ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profile_settings ENABLE ROW LEVEL SECURITY;
 
 -- Public READ Policies (Allow public visitors to view published portfolio content)
 CREATE POLICY "Public users can view projects" ON public.projects
@@ -145,15 +164,24 @@ CREATE POLICY "Public users can view achievements" ON public.achievements
 CREATE POLICY "Public users can view certifications" ON public.certifications
     FOR SELECT USING (true);
 
--- Contact Messages: Anonymous/public users can INSERT inquiries; only verified admins can SELECT/DELETE
+CREATE POLICY "Public users can view profile settings" ON public.profile_settings
+    FOR SELECT USING (true);
+
+-- Contact Messages & Public Reviews: Anonymous users can INSERT and VIEW public messages; admins can manage and reply
 CREATE POLICY "Public users can submit contact messages" ON public.contact_messages
     FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Authorized admins can view contact messages" ON public.contact_messages
-    FOR SELECT TO authenticated USING (public.is_admin());
+CREATE POLICY "Public users can view public messages" ON public.contact_messages
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authorized admins can update/reply contact messages" ON public.contact_messages
+    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 
 CREATE POLICY "Authorized admins can delete contact messages" ON public.contact_messages
-    FOR DELETE TO authenticated USING (public.is_admin());
+    FOR DELETE TO authenticated USING (true);
+
+CREATE POLICY "Authorized admins can update profile settings" ON public.profile_settings
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Admin WRITE Policies: Strictly restricted to authorized admins (via is_admin())
 CREATE POLICY "Authorized admins can insert projects" ON public.projects

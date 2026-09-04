@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { profileService, ProfileData } from '../services/profileService';
 import {
   Cpu,
   Bot,
@@ -10,6 +11,11 @@ import {
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
+  const [profile, setProfile] = useState<ProfileData>(profileService.getLocalProfile());
+
+  useEffect(() => {
+    profileService.getProfile().then(setProfile);
+  }, []);
   return (
     <section
       id="about"

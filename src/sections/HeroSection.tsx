@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { TelemetryCanvas } from '../components/ui/TelemetryCanvas';
+import { OperatorAvatar } from '../components/ui/OperatorAvatar';
+import { profileService, ProfileData, DEFAULT_PROFILE } from '../services/profileService';
 import {
   Github,
   Linkedin,
@@ -9,6 +11,7 @@ import {
   Cpu,
   Eye,
   Settings2,
+  Sparkles
 } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -18,6 +21,12 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onExploreProjects,
 }) => {
+  const [profile, setProfile] = useState<ProfileData>(profileService.getLocalProfile());
+
+  useEffect(() => {
+    profileService.getProfile().then(setProfile);
+  }, []);
+
   return (
     <section
       id="hero"
@@ -32,113 +41,118 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Scanline Texture */}
       <div className="absolute inset-0 scanline-overlay pointer-events-none" />
 
-      <div className="relative z-10 max-w-5xl mx-auto w-full text-center space-y-8">
+      <div className="relative z-10 max-w-6xl mx-auto w-full space-y-10">
 
-        {/* System Diagnostics */}
-        <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 p-2 bg-hud-card/80 border border-hud-border-bright rounded-sm backdrop-blur-md font-mono text-xs text-hud-muted">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-hud-green rounded-full animate-ping" />
-            <span className="text-hud-green font-bold">
-              [SYS.ONLINE]
-            </span>
-          </div>
+        {/* Top System Status Bar */}
+        <div className="flex justify-center">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 p-2 bg-hud-card/80 border border-hud-border-bright rounded-sm backdrop-blur-md font-mono text-xs text-hud-muted">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-hud-green rounded-full animate-ping" />
+              <span className="text-hud-green font-bold">
+                [SYS.ONLINE]
+              </span>
+            </div>
 
-          <span className="text-hud-border-bright hidden sm:inline">
-            |
-          </span>
+            <span className="text-hud-border-bright hidden sm:inline">|</span>
 
-          <span className="text-hud-slate">
-            CORE: MECHATRONICS
-          </span>
-
-          <span className="text-hud-border-bright hidden sm:inline">
-            |
-          </span>
-
-          <span className="text-hud-green">
-            STATUS: ACTIVE
-          </span>
-        </div>
-
-        {/* Main Hero Header */}
-        <div className="space-y-4">
-
-          <div className="font-mono text-xs sm:text-sm text-hud-green uppercase tracking-[0.25em] flex items-center justify-center gap-2">
-            <Terminal className="w-4 h-4 text-hud-green" />
-
-            <span>
-              ASPIRING ROBOTICS ENGINEER • HARDWARE × SOFTWARE
-            </span>
-          </div>
-
-          <h1 className="font-tech text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-hud-bright uppercase">
-            SAMUVEL PRAKASH F
-          </h1>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base md:text-lg font-mono text-hud-slate">
-            <span className="text-hud-bright font-semibold">
-              MECHATRONICS ENGINEERING
+            <span className="text-hud-slate">
+              CORE: MECHATRONICS
             </span>
 
-            <span className="text-hud-green">•</span>
+            <span className="text-hud-border-bright hidden sm:inline">|</span>
 
-            <span className="text-hud-green glow-green">
-              ROBOTICS
-            </span>
-
-            <span className="text-hud-green">•</span>
-
-            <span className="text-hud-cyan">
-              AUTOMATION
-            </span>
-
-            <span className="text-hud-green">•</span>
-
-            <span className="text-hud-amber">
-              EMBEDDED & AI
+            <span className="text-hud-green">
+              STATUS: {profile.status || 'ACTIVE'}
             </span>
           </div>
         </div>
 
-        {/* Engineering Positioning */}
-        <p className="max-w-2xl mx-auto text-sm sm:text-base text-hud-slate leading-relaxed font-sans px-4">
-          Building practical mechatronics systems by combining embedded
-          systems, sensors, automation logic, IoT, and computer vision
-          for real-world engineering applications.
-        </p>
+        {/* 2-Column Hero Presentation */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center text-center lg:text-left">
+          
+          {/* Left Text / Info Column */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            <div className="space-y-3">
+              <div className="font-mono text-xs sm:text-sm text-hud-green uppercase tracking-[0.25em] flex items-center justify-center lg:justify-start gap-2">
+                <Terminal className="w-4 h-4 text-hud-green" />
+                <span>
+                  {profile.title || 'ASPIRING ROBOTICS ENGINEER • HARDWARE × SOFTWARE'}
+                </span>
+              </div>
 
-        {/* Primary Actions */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              <h1 className="font-tech text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-hud-bright uppercase">
+                {profile.name || 'SAMUVEL PRAKASH F'}
+              </h1>
 
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={onExploreProjects}
-            icon={<ArrowDown className="w-4 h-4" />}
-            iconPosition="right"
-          >
-            EXPLORE PROJECTS
-          </Button>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 text-xs sm:text-sm md:text-base font-mono text-hud-slate">
+                <span className="text-hud-bright font-semibold">
+                  MECHATRONICS
+                </span>
+                <span className="text-hud-green">•</span>
+                <span className="text-hud-green glow-green font-semibold">
+                  ROBOTICS
+                </span>
+                <span className="text-hud-green">•</span>
+                <span className="text-hud-cyan">
+                  AUTOMATION
+                </span>
+                <span className="text-hud-green">•</span>
+                <span className="text-hud-amber">
+                  EMBEDDED & AI
+                </span>
+              </div>
+            </div>
 
-          <a
-            href="https://github.com/samkiller07"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 bg-hud-card hover:bg-hud-panel border border-hud-border hover:border-hud-green/60 text-sm font-mono text-hud-text hover:text-hud-bright transition-all rounded-sm"
-          >
-            <Github className="w-4 h-4 text-hud-green" />
-            <span>GITHUB</span>
-          </a>
+            {/* Engineering Positioning Bio */}
+            <p className="text-sm sm:text-base text-hud-slate leading-relaxed font-sans max-w-xl mx-auto lg:mx-0">
+              {profile.bio || 'Building practical mechatronics systems by combining embedded systems, sensors, automation logic, IoT, and computer vision for real-world engineering applications.'}
+            </p>
 
-          <a
-            href="https://linkedin.com/in/samuvel-prakash-f-3385902a5"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 bg-hud-card hover:bg-hud-panel border border-hud-border hover:border-hud-green/60 text-sm font-mono text-hud-text hover:text-hud-bright transition-all rounded-sm"
-          >
-            <Linkedin className="w-4 h-4 text-hud-green" />
-            <span>LINKEDIN</span>
-          </a>
+            {/* Primary Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={onExploreProjects}
+                icon={<ArrowDown className="w-4 h-4" />}
+                iconPosition="right"
+              >
+                EXPLORE PROJECTS
+              </Button>
+
+              <a
+                href={profile.github_url || "https://github.com/samkiller07"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-hud-card hover:bg-hud-panel border border-hud-border hover:border-hud-green/60 text-sm font-mono text-hud-text hover:text-hud-bright transition-all rounded-sm"
+              >
+                <Github className="w-4 h-4 text-hud-green" />
+                <span>GITHUB</span>
+              </a>
+
+              <a
+                href={profile.linkedin_url || "https://linkedin.com/in/samuvel-prakash-f-3385902a5"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-hud-card hover:bg-hud-panel border border-hud-border hover:border-hud-green/60 text-sm font-mono text-hud-text hover:text-hud-bright transition-all rounded-sm"
+              >
+                <Linkedin className="w-4 h-4 text-hud-green" />
+                <span>LINKEDIN</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: Holographic Cyberpunk HUD Avatar */}
+          <div className="lg:col-span-5 flex justify-center items-center">
+            <OperatorAvatar
+              avatarUrl={profile.avatar_url}
+              name={profile.name}
+              operatorId={profile.operator_id}
+              statusText={profile.status}
+              size="lg"
+            />
+          </div>
         </div>
 
         {/* Engineering Capability Matrix */}
