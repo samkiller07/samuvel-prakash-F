@@ -35,6 +35,10 @@ jobs:
 
       - name: Build production bundle
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://usuhfanhujjqsjdoyouq.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_Grc8FjIDpMYLcWg828FsqA_I_xYhkjt' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Grc8FjIDpMYLcWg828FsqA_I_xYhkjt' }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
