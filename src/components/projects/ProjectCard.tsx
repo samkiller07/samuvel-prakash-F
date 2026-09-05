@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Project } from '../../types/project';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
 import { Github, ExternalLink, ChevronRight, Activity, Layers } from 'lucide-react';
+import { storageService } from '../../services/storageService';
 
 interface ProjectCardProps {
   project: Project;
@@ -10,8 +11,12 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) => {
+  const [imageError, setImageError] = useState(false);
+  const resolvedThumbnail = storageService.resolveStorageUrl(project.thumbnail_url);
+  const hasValidThumbnail = Boolean(resolvedThumbnail) && !imageError;
+
   return (
-    <div className="group relative bg-hud-card border border-hud-border hover:border-hud-green/60 rounded-sm overflow-hidden flex flex-col transition-all duration-300 hud-card hud-corner hover:shadow-hud">
+    <div className="group relative bg-hud-card border border-hud-border hover:border-hud-green/60 rounded-sm overflow-hidden flex flex-col transition-all duration-300 hud-card hud-corner hover:shadow-hud select-none">
       {/* Top Telemetry Header */}
       <div className="px-4 py-2 bg-hud-panel border-b border-hud-border flex items-center justify-between text-xs font-mono">
         <div className="flex items-center gap-2">
@@ -25,11 +30,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
 
       {/* Project Thumbnail with overlay */}
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-black/50 flex items-center justify-center">
-        {project.thumbnail_url ? (
+        {hasValidThumbnail ? (
           <img
-            src={project.thumbnail_url}
+            src={resolvedThumbnail!}
             alt={project.title}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+            draggable={false}
+            onError={() => {
+              if (import.meta.env.DEV) {
+                console.warn(`[ProjectCard] Failed to load thumbnail for "${project.title}":`, resolvedThumbnail);
+              }
+              setImageError(true);
+            }}
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100 pointer-events-none"
             loading="lazy"
           />
         ) : (
@@ -40,10 +52,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-hud-card via-transparent to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-hud-card via-transparent to-transparent opacity-90 pointer-events-none" />
 
         {project.featured && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 bg-hud-green/20 border border-hud-green/80 text-hud-green text-[10px] font-mono font-semibold uppercase tracking-wider rounded-sm backdrop-blur-sm">
+          <div className="absolute top-2 right-2 px-2 py-0.5 bg-hud-green/20 border border-hud-green/80 text-hud-green text-[10px] font-mono font-semibold uppercase tracking-wider rounded-sm backdrop-blur-sm pointer-events-none">
             FEATURED MODULE
           </div>
         )}

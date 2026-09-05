@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   RefreshCw,
   User,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export const CommentsSection: React.FC = () => {
@@ -23,6 +25,9 @@ export const CommentsSection: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const INITIAL_COMMENT_LIMIT = 4;
 
   const fetchComments = async () => {
     setIsLoading(true);
@@ -70,6 +75,10 @@ export const CommentsSection: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  const visibleComments = isExpanded ? comments : comments.slice(0, INITIAL_COMMENT_LIMIT);
+  const hasMoreComments = comments.length > INITIAL_COMMENT_LIMIT;
+  const remainingCount = comments.length - INITIAL_COMMENT_LIMIT;
 
   return (
     <section
@@ -202,67 +211,92 @@ export const CommentsSection: React.FC = () => {
                 <p className="text-[11px] text-hud-muted">Be the first to transmit a comment or project review!</p>
               </div>
             ) : (
-              <div className="space-y-4 max-h-[700px] overflow-y-auto pr-1">
-                {comments.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-hud-card border border-hud-border rounded-sm p-4 sm:p-5 space-y-3 font-mono text-xs relative hud-corner hover:border-hud-border-bright transition-colors"
-                  >
-                    {/* Visitor Comment Header */}
-                    <div className="flex items-start justify-between gap-2 border-b border-hud-border pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-hud-panel border border-hud-cyan/40 flex items-center justify-center text-hud-cyan font-bold text-[10px]">
-                          {item.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-bold text-hud-bright tracking-wide">
-                            {item.name}
+              <div className="space-y-4">
+                <div className="space-y-4 transition-all duration-300">
+                  {visibleComments.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-hud-card border border-hud-border rounded-sm p-4 sm:p-5 space-y-3 font-mono text-xs relative hud-corner hover:border-hud-border-bright transition-colors"
+                    >
+                      {/* Visitor Comment Header */}
+                      <div className="flex items-start justify-between gap-2 border-b border-hud-border pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-hud-panel border border-hud-cyan/40 flex items-center justify-center text-hud-cyan font-bold text-[10px]">
+                            {item.name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="text-[10px] text-hud-muted">
-                            VISITOR TRANSMISSION
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-[10px] text-hud-muted flex items-center gap-1 flex-shrink-0">
-                        <Clock className="w-3 h-3 text-hud-muted" />
-                        <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    {/* Visitor Comment Body */}
-                    <p className="text-hud-slate font-sans text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                      {item.comment}
-                    </p>
-
-                    {/* Nested Admin / Operator Replies */}
-                    {item.replies && item.replies.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-hud-border/60 space-y-3">
-                        {item.replies.map((reply) => (
-                          <div
-                            key={reply.id}
-                            className="p-3 bg-hud-panel border-l-2 border-hud-green rounded-r-sm space-y-1.5 ml-2 sm:ml-4"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-hud-green uppercase tracking-wider">
-                                <ShieldCheck className="w-3.5 h-3.5 text-hud-green" />
-                                <span>{reply.name} [OPERATOR / ADMIN]</span>
-                              </div>
-                              <span className="text-[9px] text-hud-muted font-mono">
-                                {new Date(reply.created_at).toLocaleDateString()}
-                              </span>
+                          <div>
+                            <div className="font-bold text-hud-bright tracking-wide">
+                              {item.name}
                             </div>
-
-                            <p className="text-xs font-sans text-hud-bright leading-relaxed pl-1 whitespace-pre-wrap">
-                              {reply.comment}
-                            </p>
+                            <div className="text-[10px] text-hud-muted">
+                              VISITOR TRANSMISSION
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
 
+                        <div className="text-[10px] text-hud-muted flex items-center gap-1 flex-shrink-0">
+                          <Clock className="w-3 h-3 text-hud-muted" />
+                          <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Visitor Comment Body */}
+                      <p className="text-hud-slate font-sans text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                        {item.comment}
+                      </p>
+
+                      {/* Nested Admin / Operator Replies */}
+                      {item.replies && item.replies.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-hud-border/60 space-y-3">
+                          {item.replies.map((reply) => (
+                            <div
+                              key={reply.id}
+                              className="p-3 bg-hud-panel border-l-2 border-hud-green rounded-r-sm space-y-1.5 ml-2 sm:ml-4"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-hud-green uppercase tracking-wider">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-hud-green" />
+                                  <span>{reply.name} [OPERATOR / ADMIN]</span>
+                                </div>
+                                <span className="text-[9px] text-hud-muted font-mono">
+                                  {new Date(reply.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+
+                              <p className="text-xs font-sans text-hud-bright leading-relaxed pl-1 whitespace-pre-wrap">
+                                {reply.comment}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                    </div>
+                  ))}
+                </div>
+
+                {/* See More / Show Less Toggle (Only when total comments > 4) */}
+                {hasMoreComments && (
+                  <div className="pt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-hud-panel hover:bg-hud-card border border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green font-mono text-xs uppercase tracking-wider rounded-sm transition-all shadow-sm active:scale-95 group"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-4 h-4 text-hud-green group-hover:-translate-y-0.5 transition-transform" />
+                          <span>[ SHOW LESS TRANSMISSIONS ]</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4 text-hud-green group-hover:translate-y-0.5 transition-transform" />
+                          <span>[ SEE MORE TRANSMISSIONS (+{remainingCount}) ]</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             )}
 
@@ -274,3 +308,4 @@ export const CommentsSection: React.FC = () => {
     </section>
   );
 };
+

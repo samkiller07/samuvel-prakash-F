@@ -157,7 +157,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             ariaLabel="Featured Engineering Projects Carousel"
             prevLabel="Previous projects"
             nextLabel="Next projects"
-            autoSlide={false}
+            autoSlide={true}
+            autoSlideInterval={1200}
           >
             {filteredProjects.map((project) => (
               <div key={project.id} className="h-full pb-2">

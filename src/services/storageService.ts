@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export const DEFAULT_BUCKET = 'profile-media';
+export const DEFAULT_PROFILE_BUCKET = 'profile-media';
+export const DEFAULT_PROJECT_BUCKET = 'portfolio-media';
+export const DEFAULT_BUCKET = DEFAULT_PROJECT_BUCKET;
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
@@ -13,12 +15,57 @@ export interface UploadResult {
 
 export const storageService = {
   /**
-   * Upload an image file to Supabase Storage bucket (defaults to 'profile-media').
+   * Resolves any stored value (full URL, relative storage path, or bucket path) into a valid public URL.
+   */
+  resolveStorageUrl(
+    pathOrUrl: string | null | undefined,
+    defaultBucket: string = DEFAULT_PROJECT_BUCKET
+  ): string | null {
+    if (!pathOrUrl || typeof pathOrUrl !== 'string') return null;
+    const trimmed = pathOrUrl.trim();
+    if (!trimmed) return null;
+
+    // Already a full HTTP/HTTPS URL, data URL, or blob URL
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('data:') ||
+      trimmed.startsWith('blob:')
+    ) {
+      return trimmed;
+    }
+
+    if (!isSupabaseConfigured() || !supabase) {
+      return trimmed;
+    }
+
+    try {
+      // Check if the path includes the bucket name at the start
+      let bucket = defaultBucket;
+      let cleanPath = trimmed;
+
+      if (cleanPath.startsWith('portfolio-media/')) {
+        bucket = 'portfolio-media';
+        cleanPath = cleanPath.replace(/^portfolio-media\//, '');
+      } else if (cleanPath.startsWith('profile-media/')) {
+        bucket = 'profile-media';
+        cleanPath = cleanPath.replace(/^profile-media\//, '');
+      }
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+      return data.publicUrl || trimmed;
+    } catch {
+      return trimmed;
+    }
+  },
+
+  /**
+   * Upload an image file to Supabase Storage bucket.
    */
   async uploadProjectImage(
     file: File,
-    folder: string = 'avatar',
-    bucket: string = DEFAULT_BUCKET
+    folder: string = 'thumbnails',
+    bucket: string = DEFAULT_PROJECT_BUCKET
   ): Promise<UploadResult> {
     // 1. Validation: File size
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -48,7 +95,7 @@ export const storageService = {
       const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
       const filePath = `${folder}/${Date.now()}_${cleanName}`;
 
-      // Try designated bucket, fallback to 'portfolio-media' if bucket doesn't exist
+      // Try designated bucket, fallback to alternative media bucket if needed
       let uploadBucket = bucket;
       let { data, error } = await supabase.storage
         .from(uploadBucket)
@@ -57,7 +104,17 @@ export const storageService = {
           upsert: true
         });
 
-      if (error && uploadBucket !== 'portfolio-media') {
+      if (error && uploadBucket === 'portfolio-media') {
+        uploadBucket = 'profile-media';
+        const retry = await supabase.storage
+          .from(uploadBucket)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+        data = retry.data;
+        error = retry.error;
+      } else if (error && uploadBucket === 'profile-media') {
         uploadBucket = 'portfolio-media';
         const retry = await supabase.storage
           .from(uploadBucket)
@@ -98,7 +155,7 @@ export const storageService = {
   /**
    * Delete an image from Supabase Storage by path
    */
-  async deleteImage(path: string, bucket: string = DEFAULT_BUCKET): Promise<{ success: boolean; error?: string }> {
+  async deleteImage(path: string, bucket: string = DEFAULT_PROJECT_BUCKET): Promise<{ success: boolean; error?: string }> {
     if (isSupabaseConfigured() && supabase && path) {
       try {
         const { error } = await supabase.storage.from(bucket).remove([path]);
@@ -113,3 +170,4 @@ export const storageService = {
     return { success: true };
   }
 };
+

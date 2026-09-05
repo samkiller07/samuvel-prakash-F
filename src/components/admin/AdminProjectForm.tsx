@@ -73,8 +73,9 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
   });
 
   // Storage Upload States
-  const [isUploadingThumb, setIsUploadingThumb] = useState(false);
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+  const [thumbUploadStatus, setThumbUploadStatus] = useState<UploadStatus>('idle');
+  const [mediaUploadStatus, setMediaUploadStatus] = useState<UploadStatus>('idle');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
@@ -115,20 +116,22 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
 
     setUploadError(null);
     setUploadSuccess(null);
-    setIsUploadingThumb(true);
+    setThumbUploadStatus('uploading');
 
     try {
-      const result = await storageService.uploadProjectImage(file, 'thumbnails');
+      const result = await storageService.uploadProjectImage(file, 'thumbnails', 'portfolio-media');
       if (result.success && result.url) {
         setFormData((prev) => ({ ...prev, thumbnail_url: result.url }));
-        setUploadSuccess(`Thumbnail image "${file.name}" uploaded successfully!`);
+        setThumbUploadStatus('success');
+        setUploadSuccess(`Thumbnail image "${file.name}" uploaded successfully to Supabase Storage!`);
       } else {
+        setThumbUploadStatus('error');
         setUploadError(result.error || 'Failed to upload image.');
       }
     } catch (err: any) {
+      setThumbUploadStatus('error');
       setUploadError(err.message || 'Error uploading file.');
     } finally {
-      setIsUploadingThumb(false);
       if (thumbInputRef.current) thumbInputRef.current.value = '';
     }
   };
@@ -140,20 +143,22 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
 
     setUploadError(null);
     setUploadSuccess(null);
-    setIsUploadingMedia(true);
+    setMediaUploadStatus('uploading');
 
     try {
-      const result = await storageService.uploadProjectImage(file, 'gallery');
+      const result = await storageService.uploadProjectImage(file, 'gallery', 'portfolio-media');
       if (result.success && result.url) {
         setNewMedia((prev) => ({ ...prev, url: result.url as string }));
+        setMediaUploadStatus('success');
         setUploadSuccess(`Media asset "${file.name}" uploaded to storage.`);
       } else {
+        setMediaUploadStatus('error');
         setUploadError(result.error || 'Failed to upload media file.');
       }
     } catch (err: any) {
+      setMediaUploadStatus('error');
       setUploadError(err.message || 'Error uploading file.');
     } finally {
-      setIsUploadingMedia(false);
       if (mediaFileInputRef.current) mediaFileInputRef.current.value = '';
     }
   };
@@ -165,6 +170,7 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
         media: [...(prev.media || []), { ...newMedia, sort_order: (prev.media?.length || 0) + 1 }]
       }));
       setNewMedia({ type: 'image', url: '', caption: '', sort_order: 1 });
+      setMediaUploadStatus('idle');
       setUploadSuccess('Media item added to project attachments.');
     }
   };
@@ -284,11 +290,14 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
         </div>
 
         {/* Thumbnail Image: Direct Upload & URL */}
-        <div className="space-y-2 p-3 bg-hud-card border border-hud-border rounded-sm">
-          <label className="text-hud-green uppercase font-bold block flex items-center justify-between">
-            <span>THUMBNAIL IMAGE (STORAGE UPLOAD / URL)</span>
+        <div className="space-y-3 p-3 bg-hud-card border border-hud-border rounded-sm">
+          <div className="flex items-center justify-between">
+            <label className="text-hud-green uppercase font-bold text-xs flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>PROJECT THUMBNAIL IMAGE</span>
+            </label>
             <span className="text-[10px] text-hud-slate font-normal">MAX 5MB • JPG, PNG, WEBP</span>
-          </label>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* Hidden file input */}
@@ -297,26 +306,63 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
               ref={thumbInputRef}
               onChange={handleThumbnailFileSelect}
               accept="image/png,image/jpeg,image/webp,image/jpg"
+              disabled={thumbUploadStatus === 'uploading'}
               className="hidden"
             />
 
+            {/* Choose / Upload Button */}
             <Button
               type="button"
-              variant="secondary"
+              variant={thumbUploadStatus === 'success' ? 'outline' : 'secondary'}
               size="sm"
-              disabled={isUploadingThumb}
+              disabled={thumbUploadStatus === 'uploading'}
               onClick={() => thumbInputRef.current?.click()}
-              icon={isUploadingThumb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-hud-green" />}
+              icon={
+                thumbUploadStatus === 'uploading' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-hud-green" />
+                ) : thumbUploadStatus === 'success' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-hud-green" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 text-hud-green" />
+                )
+              }
             >
-              {isUploadingThumb ? 'UPLOADING TO STORAGE...' : 'CHOOSE IMAGE FILE'}
+              {thumbUploadStatus === 'uploading'
+                ? 'Uploading...'
+                : formData.thumbnail_url
+                ? 'Change Image'
+                : 'Choose Image'}
             </Button>
 
-            <span className="text-hud-muted text-[10px]">OR ENTER DIRECT URL:</span>
+            {/* Upload Lifecycle State Badge */}
+            {thumbUploadStatus === 'uploading' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-hud-amber/10 border border-hud-amber/40 text-hud-amber text-[10px] font-mono rounded-sm animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Uploading...</span>
+              </span>
+            )}
+            {thumbUploadStatus === 'success' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-hud-green/10 border border-hud-green/50 text-hud-green text-[10px] font-mono font-bold rounded-sm">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>✓ Uploaded</span>
+              </span>
+            )}
+            {thumbUploadStatus === 'error' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-hud-red/10 border border-hud-red/50 text-hud-red text-[10px] font-mono font-bold rounded-sm">
+                <AlertCircle className="w-3 h-3" />
+                <span>Upload failed</span>
+              </span>
+            )}
+
+            <span className="text-hud-muted text-[10px]">OR URL:</span>
 
             <input
               type="url"
               value={formData.thumbnail_url || ''}
-              onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value || null })}
+              onChange={(e) => {
+                setFormData({ ...formData, thumbnail_url: e.target.value || null });
+                if (thumbUploadStatus !== 'idle') setThumbUploadStatus('idle');
+              }}
               placeholder="https://..."
               className="flex-1 w-full p-1.5 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none text-xs"
             />
@@ -324,7 +370,10 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
             {formData.thumbnail_url && (
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, thumbnail_url: null })}
+                onClick={() => {
+                  setFormData({ ...formData, thumbnail_url: null });
+                  setThumbUploadStatus('idle');
+                }}
                 className="text-hud-muted hover:text-hud-red p-1 text-xs"
                 title="Clear thumbnail"
               >
@@ -344,9 +393,11 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
                   (e.target as HTMLImageElement).src = '';
                 }}
               />
-              <div className="truncate text-xs text-hud-slate">
-                <span className="text-hud-green font-bold">[ACTIVE THUMBNAIL]: </span>
-                <span className="text-hud-text truncate">{formData.thumbnail_url}</span>
+              <div className="flex-1 min-w-0 text-xs text-hud-slate">
+                <div className="text-hud-green font-bold text-[11px] flex items-center gap-1">
+                  <span>[IMAGE PREVIEW CONFIRMED]</span>
+                </div>
+                <div className="text-hud-text truncate text-[10px] font-mono">{formData.thumbnail_url}</div>
               </div>
             </div>
           )}
@@ -626,19 +677,34 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
 
               <Button
                 type="button"
-                variant="secondary"
+                variant={mediaUploadStatus === 'success' ? 'outline' : 'secondary'}
                 size="sm"
-                disabled={isUploadingMedia}
+                disabled={mediaUploadStatus === 'uploading'}
                 onClick={() => mediaFileInputRef.current?.click()}
-                icon={isUploadingMedia ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-hud-green" />}
+                icon={
+                  mediaUploadStatus === 'uploading' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-hud-green" />
+                  ) : mediaUploadStatus === 'success' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-hud-green" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5 text-hud-green" />
+                  )
+                }
               >
-                {isUploadingMedia ? 'UPLOADING...' : 'UPLOAD FILE'}
+                {mediaUploadStatus === 'uploading'
+                  ? 'Uploading...'
+                  : mediaUploadStatus === 'success'
+                  ? '✓ Uploaded'
+                  : 'Choose File'}
               </Button>
 
               <input
                 type="url"
                 value={newMedia.url}
-                onChange={(e) => setNewMedia({ ...newMedia, url: e.target.value })}
+                onChange={(e) => {
+                  setNewMedia({ ...newMedia, url: e.target.value });
+                  if (mediaUploadStatus !== 'idle') setMediaUploadStatus('idle');
+                }}
                 placeholder="Or paste media URL..."
                 className="flex-1 p-2 bg-hud-panel border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
               />

@@ -1,6 +1,7 @@
 import { Project, ProjectFormData } from '../types/project';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_PROJECTS } from '../data/initialProjects';
+import { storageService } from './storageService';
 
 export const projectService = {
   /**
@@ -24,10 +25,24 @@ export const projectService = {
         }
 
         if (data && data.length > 0) {
-          const formatted: Project[] = data.map((p: any) => ({
-            ...p,
-            media: (p.media || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
-          }));
+          const formatted: Project[] = data.map((p: any) => {
+            const rawThumbnail = p.thumbnail_url || p.image_url || null;
+            const resolvedThumbnail = storageService.resolveStorageUrl(rawThumbnail);
+            
+            const mediaList = (p.media || []).map((m: any) => ({
+              ...m,
+              url: storageService.resolveStorageUrl(m.url) || m.url
+            })).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+
+            // If thumbnail_url is missing, fallback to first image in media if available
+            const finalThumbnail = resolvedThumbnail || (mediaList.find((m: any) => m.type === 'image')?.url) || null;
+
+            return {
+              ...p,
+              thumbnail_url: finalThumbnail,
+              media: mediaList
+            };
+          });
           return { data: formatted, source: 'supabase' };
         } else {
           return { data: INITIAL_PROJECTS, source: 'local' };
