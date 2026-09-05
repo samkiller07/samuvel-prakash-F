@@ -158,7 +158,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             prevLabel="Previous projects"
             nextLabel="Next projects"
             autoSlide={true}
-            autoSlideInterval={1200}
+            autoSlideInterval={4000}
           >
             {filteredProjects.map((project) => (
               <div key={project.id} className="h-full pb-2">

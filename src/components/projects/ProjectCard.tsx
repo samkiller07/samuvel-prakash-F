@@ -92,14 +92,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
           </div>
 
           {/* Action Row */}
-          <div className="pt-3 border-t border-hud-border/70 flex items-center justify-between gap-2">
+          <div className="pt-3 border-t border-hud-border/70 flex items-center justify-between gap-2 relative z-10">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onSelect(project)}
               icon={<ChevronRight className="w-3.5 h-3.5" />}
               iconPosition="right"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto cursor-pointer"
             >
               SPECIFICATION
             </Button>
@@ -110,7 +110,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
                   href={project.github_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 text-hud-muted hover:text-hud-green bg-hud-panel hover:bg-hud-hover border border-hud-border rounded-sm transition-colors"
+                  className="p-1.5 text-hud-muted hover:text-hud-green bg-hud-panel hover:bg-hud-hover border border-hud-border rounded-sm transition-colors cursor-pointer"
                   title="View Source Code"
                   aria-label="View Source Code on GitHub"
                 >
@@ -122,7 +122,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
                   href={project.demo_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 text-hud-muted hover:text-hud-cyan bg-hud-panel hover:bg-hud-hover border border-hud-border rounded-sm transition-colors"
+                  className="p-1.5 text-hud-muted hover:text-hud-cyan bg-hud-panel hover:bg-hud-hover border border-hud-border rounded-sm transition-colors cursor-pointer"
                   title="Live Demo"
                   aria-label="Live Demo Link"
                 >

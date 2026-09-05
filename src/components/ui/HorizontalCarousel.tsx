@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from 'lucide-react';
 
 interface HorizontalCarouselProps {
   children: React.ReactNode[];
@@ -9,7 +9,7 @@ interface HorizontalCarouselProps {
     desktop?: number;
   };
   autoSlide?: boolean;
-  autoSlideInterval?: number; // ms
+  autoSlideInterval?: number; // ms (recommended 4000ms for readable card content)
   ariaLabel?: string;
   prevLabel?: string;
   nextLabel?: string;
@@ -20,21 +20,22 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
   children,
   itemsPerView = { mobile: 1, tablet: 2, desktop: 3 },
   autoSlide = true,
-  autoSlideInterval = 1200,
+  autoSlideInterval = 4000,
   ariaLabel = 'Carousel',
   prevLabel = 'Previous items',
   nextLabel = 'Next items',
   className = ''
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
+  const [isAutoSlideEnabled, setIsAutoSlideEnabled] = useState(autoSlide);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState<number | null>(null);
   const [dragDeltaPx, setDragDeltaPx] = useState<number>(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const interactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerDownRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartYRef = useRef(0);
+  const hasDraggedRef = useRef(false);
 
   const totalItems = React.Children.count(children);
 
@@ -75,34 +76,20 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
     setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
   }, [maxIndex]);
 
-  // Helper to temporarily pause autoplay when user interacts, then resume
-  const triggerInteractionCooldown = useCallback((durationMs: number = 2500) => {
-    setIsInteracting(true);
-    if (interactionTimerRef.current) {
-      clearTimeout(interactionTimerRef.current);
-    }
-    interactionTimerRef.current = setTimeout(() => {
-      setIsInteracting(false);
-    }, durationMs);
+  // Handler when user triggers manual navigation -> turn auto-scroll off
+  const handleManualSlide = useCallback((action: () => void) => {
+    setIsAutoSlideEnabled(false);
+    action();
   }, []);
 
-  // Cleanup interaction timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (interactionTimerRef.current) {
-        clearTimeout(interactionTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Check reduced motion
+  // Check reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Single active Auto-slide effect
+  // Single active Auto-slide effect (Smooth 4s interval, stops when manual mode active)
   useEffect(() => {
-    if (!autoSlide || isPaused || isInteracting || isDragging || prefersReducedMotion || maxIndex <= 0) {
+    if (!isAutoSlideEnabled || isDragging || prefersReducedMotion || maxIndex <= 0) {
       return;
     }
 
@@ -111,66 +98,89 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
     }, autoSlideInterval);
 
     return () => clearInterval(timer);
-  }, [autoSlide, autoSlideInterval, isPaused, isInteracting, isDragging, nextSlide, prefersReducedMotion, maxIndex]);
+  }, [isAutoSlideEnabled, autoSlideInterval, isDragging, nextSlide, prefersReducedMotion, maxIndex]);
 
-  // Keyboard navigation
+  // Keyboard navigation -> turns auto-scroll off
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      triggerInteractionCooldown();
-      prevSlide();
+      handleManualSlide(prevSlide);
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      triggerInteractionCooldown();
-      nextSlide();
+      handleManualSlide(nextSlide);
     }
   };
 
-  // Unified Pointer handlers for Desktop Mouse Drag & Mobile Touch
+  // Pointer Handlers: DO NOT capture pointer on pointerDown so button clicks work normally on desktop
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only respond to left mouse button or touch/pen pointers
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    setIsDragging(true);
-    setDragStartX(e.clientX);
+    pointerDownRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartYRef.current = e.clientY;
+    hasDraggedRef.current = false;
     setDragDeltaPx(0);
-    triggerInteractionCooldown(3000);
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignored if pointer capture not supported
-    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || dragStartX === null) return;
-    const delta = e.clientX - dragStartX;
-    setDragDeltaPx(delta);
+    if (!pointerDownRef.current) return;
+
+    const deltaX = e.clientX - dragStartXRef.current;
+    const deltaY = e.clientY - dragStartYRef.current;
+
+    // Only initiate drag mode if horizontal movement exceeds 6px (distinguishes drag from click)
+    if (!hasDraggedRef.current) {
+      if (Math.abs(deltaX) > 6 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        hasDraggedRef.current = true;
+        setIsDragging(true);
+        // Manual drag turns off auto-scroll
+        setIsAutoSlideEnabled(false);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // Ignored
+        }
+      }
+    }
+
+    if (hasDraggedRef.current) {
+      setDragDeltaPx(deltaX);
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
+    if (!pointerDownRef.current) return;
 
-    try {
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+    if (hasDraggedRef.current) {
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Ignored
       }
-    } catch {
-      // Ignored
+
+      const threshold = 40; // min swipe distance in px to change slide
+      if (dragDeltaPx > threshold) {
+        prevSlide();
+      } else if (dragDeltaPx < -threshold) {
+        nextSlide();
+      }
+
+      setIsDragging(false);
+      setDragDeltaPx(0);
     }
 
-    const threshold = 40; // minimum swipe distance in px to change slide
-    if (dragDeltaPx > threshold) {
-      prevSlide();
-    } else if (dragDeltaPx < -threshold) {
-      nextSlide();
-    }
+    pointerDownRef.current = false;
+  };
 
-    setIsDragging(false);
-    setDragStartX(null);
-    setDragDeltaPx(0);
-    triggerInteractionCooldown(2000);
+  // Prevent accidental click triggering on child buttons if user performed a drag gesture
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (hasDraggedRef.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      hasDraggedRef.current = false;
+    }
   };
 
   if (totalItems === 0) return null;
@@ -188,88 +198,92 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
       aria-label={ariaLabel}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onFocus={() => triggerInteractionCooldown(4000)}
     >
       {/* Control Header & Indicators */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Telemetry Index Badge */}
-        <div className="font-mono text-xs text-hud-muted flex items-center gap-2 select-none">
+        <div className="font-mono text-xs text-hud-muted flex flex-wrap items-center gap-2 select-none">
           <span className="w-1.5 h-1.5 bg-hud-green rounded-full animate-pulse" />
           <span className="text-hud-slate">MODULES:</span>
           <span className="text-hud-green font-bold">
             {String(currentIndex + 1).padStart(2, '0')} - {String(Math.min(currentIndex + visibleCount, totalItems)).padStart(2, '0')}
           </span>
           <span className="text-hud-slate">OF {String(totalItems).padStart(2, '0')}</span>
-          {autoSlide && maxIndex > 0 && !isPaused && (
-            <span className="text-[10px] text-hud-green/80 font-mono hidden sm:inline">
-              [AUTO-TELEMETRY ACTIVE]
+
+          {/* Mode Indicator */}
+          {isAutoSlideEnabled && maxIndex > 0 ? (
+            <span className="text-[10px] px-2 py-0.5 bg-hud-green/10 border border-hud-green/40 text-hud-green rounded-xs font-mono">
+              AUTO-TELEMETRY (4.0s)
+            </span>
+          ) : (
+            <span className="text-[10px] px-2 py-0.5 bg-hud-panel border border-hud-border text-hud-slate rounded-xs font-mono">
+              MANUAL NAVIGATION
             </span>
           )}
         </div>
 
         {/* Carousel Navigation Buttons */}
         <div className="flex items-center gap-2">
-          {autoSlide && (
+          {/* Toggle Auto-Slide / Resume Button */}
+          {maxIndex > 0 && (
             <button
               type="button"
-              onClick={() => {
-                setIsPaused(!isPaused);
-                triggerInteractionCooldown(3000);
-              }}
-              className="p-1.5 bg-hud-panel border border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green rounded-sm transition-colors"
-              title={isPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
-              aria-label={isPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
+              onClick={() => setIsAutoSlideEnabled(!isAutoSlideEnabled)}
+              className={`px-2 py-1.5 border rounded-sm font-mono text-xs flex items-center gap-1.5 transition-all ${
+                isAutoSlideEnabled
+                  ? 'bg-hud-panel border-hud-green/50 text-hud-green hover:bg-hud-card'
+                  : 'bg-hud-panel border-hud-border text-hud-slate hover:text-hud-green hover:border-hud-green'
+              }`}
+              title={isAutoSlideEnabled ? 'Pause auto-scroll' : 'Resume auto-scroll (4s interval)'}
+              aria-label={isAutoSlideEnabled ? 'Pause auto-scroll' : 'Resume auto-scroll'}
             >
-              {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+              {isAutoSlideEnabled ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 text-hud-green" />
+                  <span className="text-[10px] uppercase hidden sm:inline">PAUSE</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 text-hud-green" />
+                  <span className="text-[10px] uppercase hidden sm:inline">RESUME AUTO</span>
+                </>
+              )}
             </button>
           )}
 
           <button
             type="button"
-            onClick={() => {
-              triggerInteractionCooldown(3000);
-              prevSlide();
-            }}
-            disabled={currentIndex === 0 && !autoSlide}
+            onClick={() => handleManualSlide(prevSlide)}
+            disabled={currentIndex === 0 && isAutoSlideEnabled}
             aria-label={prevLabel}
-            className={`p-2 bg-hud-panel border rounded-sm transition-all flex items-center justify-center ${
-              currentIndex === 0 && !autoSlide
-                ? 'border-hud-border/40 text-hud-muted/40 cursor-not-allowed'
-                : 'border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green hover:bg-hud-card active:scale-95'
-            }`}
+            className="p-2 bg-hud-panel border border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green hover:bg-hud-card active:scale-95 rounded-sm transition-all flex items-center justify-center cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              triggerInteractionCooldown(3000);
-              nextSlide();
-            }}
-            disabled={currentIndex >= maxIndex && !autoSlide}
+            onClick={() => handleManualSlide(nextSlide)}
+            disabled={currentIndex >= maxIndex && isAutoSlideEnabled}
             aria-label={nextLabel}
-            className={`p-2 bg-hud-panel border rounded-sm transition-all flex items-center justify-center ${
-              currentIndex >= maxIndex && !autoSlide
-                ? 'border-hud-border/40 text-hud-muted/40 cursor-not-allowed'
-                : 'border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green hover:bg-hud-card active:scale-95'
-            }`}
+            className="p-2 bg-hud-panel border border-hud-border hover:border-hud-green text-hud-slate hover:text-hud-green hover:bg-hud-card active:scale-95 rounded-sm transition-all flex items-center justify-center cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Viewport Container with pan-y touch action & real-time drag feedback */}
+      {/* Viewport Container: Allows clicks to pass to children, activates drag only on intentional move */}
       <div
-        className={`w-full overflow-hidden rounded-sm select-none ${
-          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        className={`w-full overflow-hidden rounded-sm ${
+          isDragging ? 'cursor-grabbing select-none' : 'cursor-default'
         }`}
         style={{ touchAction: 'pan-y' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onClickCapture={handleClickCapture}
       >
         <div
           className="flex"
@@ -279,7 +293,7 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
               : `translateX(-${offsetPercent}%)`,
             transition: isDragging || prefersReducedMotion
               ? 'none'
-              : 'transform 450ms cubic-bezier(0.16, 1, 0.3, 1)',
+              : 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
             willChange: 'transform'
           }}
         >
@@ -306,11 +320,8 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
               role="tab"
               aria-selected={currentIndex === dotIdx}
               aria-label={`Go to slide ${dotIdx + 1}`}
-              onClick={() => {
-                triggerInteractionCooldown(3000);
-                setCurrentIndex(dotIdx);
-              }}
-              className={`h-1.5 transition-all duration-300 rounded-xs ${
+              onClick={() => handleManualSlide(() => setCurrentIndex(dotIdx))}
+              className={`h-1.5 transition-all duration-300 rounded-xs cursor-pointer ${
                 currentIndex === dotIdx
                   ? 'w-6 bg-hud-green shadow-[0_0_8px_rgba(0,255,102,0.6)]'
                   : 'w-2 bg-hud-border hover:bg-hud-slate'
@@ -322,4 +333,5 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
     </div>
   );
 };
+
 
