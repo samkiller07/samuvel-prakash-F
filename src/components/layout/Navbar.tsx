@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBadge } from '../ui/StatusBadge';
-import { Cpu, Menu, X, Terminal } from 'lucide-react';
+import { Cpu, Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   activeSection: string;
@@ -45,8 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'projects', label: '03 PROJECTS' },
     { id: 'achievements', label: '04 AWARDS' },
     { id: 'certifications', label: '05 CERTS' },
-    { id: 'comments', label: '06 REVIEWS' },
-    { id: 'contact', label: '07 CONTACT' }
+    { id: 'services', label: '06 SERVICES' },
+    { id: 'comments', label: '07 REVIEWS' },
+    { id: 'contact', label: '08 CONTACT' }
   ];
 
   const handleNavClick = (id: string) => {
@@ -75,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand / Logo */}
         <button
           onClick={() => handleNavClick('hero')}
-          className="flex items-center gap-3 text-left focus:outline-none group"
+          className="flex items-center gap-3 text-left focus:outline-none group cursor-pointer"
         >
           <div className="w-8 h-8 rounded-sm bg-hud-panel border border-hud-border-bright flex items-center justify-center text-hud-green group-hover:border-hud-green transition-colors">
             <Cpu className="w-4 h-4 text-hud-green" />
@@ -96,14 +97,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-1 font-mono text-xs" aria-label="Main Navigation">
+        <nav className="hidden xl:flex items-center gap-1 font-mono text-xs" aria-label="Main Navigation">
           {navItems.map((item) => {
             const isActive = currentView === 'home' && activeSection === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`px-3 py-1.5 rounded-sm transition-all duration-150 tracking-wider relative ${
+                className={`px-2.5 py-1.5 rounded-sm transition-all duration-150 tracking-wider relative cursor-pointer ${
                   isActive
                     ? 'text-hud-green bg-hud-panel border border-hud-green/50'
                     : 'text-hud-muted hover:text-hud-text hover:bg-hud-panel/40'
@@ -127,10 +128,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile menu hamburger */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 bg-hud-card border border-hud-border rounded-sm text-hud-muted hover:text-hud-green focus:outline-none"
+            className="p-2 bg-hud-card border border-hud-border rounded-sm text-hud-muted hover:text-hud-green focus:outline-none cursor-pointer"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -140,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-hud-card/95 backdrop-blur-md border-b border-hud-border px-4 py-4 mt-2 space-y-1 font-mono text-sm">
+        <div className="xl:hidden bg-hud-card/95 backdrop-blur-md border-b border-hud-border px-4 py-4 mt-2 space-y-1 font-mono text-sm">
           <div className="pb-2 mb-2 border-b border-hud-border flex items-center justify-between text-xs text-hud-muted">
             <span>SYS.NAVIGATION</span>
             <StatusBadge status="ONLINE" size="sm" />
@@ -150,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`w-full text-left px-3 py-2 rounded-sm tracking-wider flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2 rounded-sm tracking-wider flex items-center justify-between cursor-pointer ${
                 currentView === 'home' && activeSection === item.id
                   ? 'text-hud-green bg-hud-panel border-l-2 border-hud-green'
                   : 'text-hud-muted hover:text-hud-text hover:bg-hud-panel/40'

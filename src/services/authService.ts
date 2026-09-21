@@ -9,14 +9,10 @@ export interface UserSession {
 
 export const authService = {
   /**
-   * Verify if a user ID or email is an authorized admin
+   * Verify if a user ID is registered in the public.admin_users authorization table
+   * Note: Real authorization boundary is enforced at the database level by Supabase RLS public.is_admin().
    */
-  async checkAdminStatus(userId: string, email?: string): Promise<boolean> {
-    const ownerEmail = 'samuvelprakash09.11.2005@gmail.com';
-    if (email && email.toLowerCase().trim() === ownerEmail.toLowerCase()) {
-      return true;
-    }
-
+  async checkAdminStatus(userId: string): Promise<boolean> {
     if (!isSupabaseConfigured() || !supabase || !userId) {
       return false;
     }
@@ -29,18 +25,14 @@ export const authService = {
         .maybeSingle();
 
       if (error) {
-        console.warn('Admin table verification note:', error.message);
-        // If email matches owner, still allow
-        if (email && email.toLowerCase().trim() === ownerEmail.toLowerCase()) {
-          return true;
-        }
+        console.warn('[Security] Admin authorization query response:', error.message);
         return false;
       }
 
-      return !!data;
+      return Boolean(data && data.user_id === userId);
     } catch (err) {
-      console.error('Admin verification exception:', err);
-      return email ? email.toLowerCase().trim() === ownerEmail.toLowerCase() : false;
+      console.error('[Security] Admin authorization exception:', err);
+      return false;
     }
   },
 
@@ -59,7 +51,7 @@ export const authService = {
       }
 
       const email = session.user.email || '';
-      const isAdmin = await this.checkAdminStatus(session.user.id, email);
+      const isAdmin = await this.checkAdminStatus(session.user.id);
 
       return {
         email,
@@ -102,16 +94,17 @@ export const authService = {
         return { success: false, error: 'Authentication failed. No session created.' };
       }
 
-      // Verify admin authorization in database
+      // Verify admin authorization in public.admin_users table
       const userEmail = data.user.email || email;
-      const isAdmin = await this.checkAdminStatus(data.user.id, userEmail);
+      const isAdmin = await this.checkAdminStatus(data.user.id);
+
       if (!isAdmin) {
         // Authenticated user is not in the admin_users table
         await supabase.auth.signOut();
         return {
           success: false,
           error:
-            'Access Denied: Your account is not authorized as a portfolio administrator.'
+            'Access Denied: Your account is not authorized as a portfolio administrator in the admin_users registry.'
         };
       }
 

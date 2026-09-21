@@ -4,12 +4,12 @@ import { projectService } from '../../services/projectService';
 import { authService, UserSession } from '../../services/authService';
 import { profileService, ProfileData } from '../../services/profileService';
 import { commentService, CommentItem } from '../../services/commentService';
+import { messageService, ProjectInquiry } from '../../services/messageService';
 import { AdminProjectForm } from './AdminProjectForm';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { StatusBadge } from '../ui/StatusBadge';
 import { OperatorAvatar } from '../ui/OperatorAvatar';
-import { isSupabaseConfigured } from '../../lib/supabase';
 import {
   Plus,
   Edit2,
@@ -19,11 +19,9 @@ import {
   RefreshCw,
   Star,
   Layers,
-  Database,
   Shield,
   CheckCircle2,
   AlertTriangle,
-  Upload,
   User,
   Sparkles,
   Save,
@@ -31,7 +29,10 @@ import {
   Reply,
   Radio,
   Clock,
-  CornerDownRight,
+  Inbox,
+  Mail,
+  Calendar,
+  DollarSign,
   ShieldCheck
 } from 'lucide-react';
 
@@ -42,7 +43,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogout, onExit }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'comments'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'comments' | 'inquiries'>('profile');
   
   // Projects state
   const [projects, setProjects] = useState<Project[]>([]);
@@ -55,7 +56,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   // Profile state
   const [profile, setProfile] = useState<ProfileData>(profileService.getDefaultProfile());
   const [profileFormData, setProfileFormData] = useState<ProfileData>(profileService.getDefaultProfile());
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -66,6 +66,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  // Inquiries state
+  const [inquiries, setInquiries] = useState<ProjectInquiry[]>([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(true);
 
   // Notifications
   const [notification, setNotification] = useState<string | null>(null);
@@ -84,23 +88,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const loadAllData = async () => {
     setIsLoadingProjects(true);
     setIsLoadingComments(true);
+    setIsLoadingInquiries(true);
 
     try {
-      const [projRes, profData, comRes] = await Promise.all([
+      const [projRes, profData, comRes, inqRes] = await Promise.all([
         projectService.getAllProjects(),
         profileService.getProfile(),
-        commentService.getComments()
+        commentService.getComments(),
+        messageService.getInquiries()
       ]);
 
       setProjects(projRes.data);
       setProfile(profData);
       setProfileFormData(profData);
       setComments(comRes.data);
+      setInquiries(inqRes.data || []);
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {
       setIsLoadingProjects(false);
       setIsLoadingComments(false);
+      setIsLoadingInquiries(false);
     }
   };
 
@@ -122,7 +130,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Temporary local preview ONLY
     if (avatarPreviewUrl && avatarPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(avatarPreviewUrl);
     }
@@ -138,7 +145,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
 
     try {
       if (selectedAvatarFile) {
-        // Upload File object to Supabase Storage and persist to database
         const res = await profileService.uploadAndSaveAvatar(selectedAvatarFile, profileFormData);
         if (res.success && res.data) {
           setProfile(res.data);
@@ -150,7 +156,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           notifyError(`Photo upload error: ${res.error || 'Failed to upload photo.'}`);
         }
       } else {
-        // Update database table directly
         const res = await profileService.updateProfile(profileFormData);
         if (res.success && res.data) {
           setProfile(res.data);
@@ -259,6 +264,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     }
   };
 
+  // Inquiry Handlers
+  const handleDeleteInquiry = async (id: string) => {
+    if (window.confirm('Permanently delete this client inquiry?')) {
+      const res = await messageService.deleteInquiry(id);
+      if (res.success) {
+        notify('Client inquiry removed.');
+        const updated = await messageService.getInquiries();
+        setInquiries(updated.data);
+      } else {
+        notifyError(`Delete error: ${res.error}`);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-hud-bg py-8 px-3 sm:px-6 lg:px-8 font-mono text-xs">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -334,6 +353,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           </button>
 
           <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`px-4 py-2 rounded-sm font-tech font-bold uppercase transition-all flex items-center gap-2 ${
+              activeTab === 'inquiries'
+                ? 'bg-hud-green text-black shadow-lg shadow-hud-green/20'
+                : 'bg-hud-card text-hud-slate hover:text-hud-bright hover:bg-hud-panel'
+            }`}
+          >
+            <Inbox className="w-4 h-4" />
+            <span>CLIENT INQUIRIES ({inquiries.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('comments')}
             className={`px-4 py-2 rounded-sm font-tech font-bold uppercase transition-all flex items-center gap-2 ${
               activeTab === 'comments'
@@ -342,14 +373,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>COMMENTS &amp; REPLIES ({comments.length})</span>
+            <span>PUBLIC REVIEWS ({comments.length})</span>
           </button>
         </div>
 
         {/* TAB 1: OPERATOR PROFILE & PHOTO */}
         {activeTab === 'profile' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
             {/* Left: Avatar Upload & Live HUD Preview */}
             <div className="lg:col-span-5 bg-hud-card border border-hud-border p-6 rounded-sm space-y-6 text-center hud-corner">
               <div className="flex items-center justify-between pb-3 border-b border-hud-border text-left">
@@ -372,7 +402,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                 />
               </div>
 
-              {/* Upload Action */}
               <div className="space-y-3 pt-2">
                 <label className="block w-full">
                   <span className="sr-only">Choose profile photo</span>
@@ -569,7 +598,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
           </div>
         )}
 
-        {/* TAB 3: COMMENTS & REPLIES MANAGER */}
+        {/* TAB 3: CLIENT INQUIRIES MANAGER */}
+        {activeTab === 'inquiries' && (
+          <div className="bg-hud-card border border-hud-border rounded-sm p-6 space-y-6 hud-corner">
+            <div className="flex items-center justify-between pb-3 border-b border-hud-border">
+              <div className="font-tech text-base font-bold text-hud-bright uppercase flex items-center gap-2">
+                <Inbox className="w-4 h-4 text-hud-green" />
+                <span>PRIVATE CLIENT &amp; RECRUITER INQUIRIES ({inquiries.length})</span>
+              </div>
+              <span className="text-[10px] text-hud-slate">SUPABASE TABLE: contact_messages</span>
+            </div>
+
+            {isLoadingInquiries ? (
+              <div className="p-12 text-center text-hud-muted">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-hud-green" />
+                <span>FETCHING INQUIRIES FROM DATABASE...</span>
+              </div>
+            ) : inquiries.length === 0 ? (
+              <div className="p-12 text-center text-hud-muted space-y-2">
+                <Inbox className="w-8 h-8 mx-auto text-hud-muted opacity-40 mb-1" />
+                <p>No client inquiries received yet.</p>
+                <p className="text-[11px] text-hud-slate">Submissions via the project inquiry form will appear here privately.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {inquiries.map((inq) => (
+                  <div
+                    key={inq.id}
+                    className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-3 font-mono"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-hud-border pb-2.5">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-hud-bright font-bold text-sm">{inq.name}</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-hud-green/10 border border-hud-green/40 text-hud-green rounded-xs">
+                            {inq.service_type || 'General Inquiry'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-hud-cyan flex items-center gap-1.5">
+                          <Mail className="w-3 h-3" />
+                          <a href={`mailto:${inq.email}`} className="hover:underline">
+                            {inq.email}
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-hud-muted flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{new Date(inq.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs font-sans text-hud-text leading-relaxed whitespace-pre-wrap bg-hud-card p-3 rounded-sm border border-hud-border/70">
+                      {inq.message}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px]">
+                      <div className="flex items-center gap-4 text-hud-slate">
+                        {inq.deadline && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-hud-cyan" />
+                            <span>Deadline: <strong className="text-hud-bright">{inq.deadline}</strong></span>
+                          </div>
+                        )}
+                        {inq.budget && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="w-3.5 h-3.5 text-hud-green" />
+                            <span>Budget: <strong className="text-hud-green">{inq.budget}</strong></span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`mailto:${inq.email}?subject=Re: ${encodeURIComponent(inq.subject || 'Engineering Inquiry')}`}
+                          className="px-3 py-1 bg-hud-green text-black font-bold rounded-sm text-xs hover:bg-hud-bright transition-colors flex items-center gap-1.5"
+                        >
+                          <Reply className="w-3 h-3" />
+                          <span>REPLY VIA EMAIL</span>
+                        </a>
+                        <button
+                          onClick={() => handleDeleteInquiry(inq.id)}
+                          className="p-1 hover:bg-hud-red/20 text-hud-muted hover:text-hud-red border border-hud-border rounded-sm transition-colors"
+                          title="Delete Inquiry"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: COMMENTS & REPLIES MANAGER */}
         {activeTab === 'comments' && (
           <div className="bg-hud-card border border-hud-border rounded-sm p-6 space-y-6 hud-corner">
             <div className="flex items-center justify-between pb-3 border-b border-hud-border">
@@ -629,7 +753,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                                 className="text-hud-muted hover:text-hud-red p-1"
                                 title="Delete this reply"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                             <p className="font-sans text-hud-bright whitespace-pre-wrap">{reply.comment}</p>

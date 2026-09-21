@@ -63,6 +63,21 @@ export const Footer: React.FC = () => {
                   <span className="text-hud-green">&gt;</span> Certifications
                 </a>
               </li>
+              <li>
+                <a href="#services" className="hover:text-hud-green transition-colors flex items-center gap-1.5">
+                  <span className="text-hud-green">&gt;</span> Freelance Services
+                </a>
+              </li>
+              <li>
+                <a href="#comments" className="hover:text-hud-green transition-colors flex items-center gap-1.5">
+                  <span className="text-hud-green">&gt;</span> Reviews &amp; Comments
+                </a>
+              </li>
+              <li>
+                <a href="#contact" className="hover:text-hud-green transition-colors flex items-center gap-1.5">
+                  <span className="text-hud-green">&gt;</span> Contact &amp; Inquiries
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -76,7 +91,7 @@ export const Footer: React.FC = () => {
                 href="https://github.com/samkiller07"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm"
+                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm cursor-pointer"
               >
                 <Github className="w-4 h-4 text-hud-green" />
                 <span>GitHub Repository</span>
@@ -85,17 +100,17 @@ export const Footer: React.FC = () => {
                 href="https://linkedin.com/in/samuvel-prakash-f-3385902a5"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm"
+                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm cursor-pointer"
               >
                 <Linkedin className="w-4 h-4 text-hud-green" />
                 <span>LinkedIn Profile</span>
               </a>
               <a
                 href="mailto:samuvelprakash09.11.2005@gmail.com"
-                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm"
+                className="flex items-center gap-2 p-2 bg-hud-panel border border-hud-border hover:border-hud-green/50 hover:text-hud-bright transition-colors rounded-sm cursor-pointer"
               >
                 <Mail className="w-4 h-4 text-hud-green" />
-                <span>Email</span>
+                <span>Email Inbox</span>
               </a>
             </div>
           </div>
@@ -112,7 +127,7 @@ export const Footer: React.FC = () => {
             <span className="text-hud-slate">LOCATION: COIMBATORE, TN</span>
             <button
               onClick={scrollToTop}
-              className="p-1.5 bg-hud-panel border border-hud-border hover:border-hud-green text-hud-muted hover:text-hud-green rounded-sm transition-colors"
+              className="p-1.5 bg-hud-panel border border-hud-border hover:border-hud-green text-hud-muted hover:text-hud-green rounded-sm transition-colors cursor-pointer"
               title="Return to top"
               aria-label="Return to top"
             >

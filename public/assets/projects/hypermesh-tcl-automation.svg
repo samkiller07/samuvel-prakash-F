@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%" style="background:#0a0c10; font-family:'JetBrains Mono', monospace;">
+  <defs>
+    <linearGradient id="amberCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#18140c"/>
+      <stop offset="100%" stop-color="#0c0a06"/>
+    </linearGradient>
+    <filter id="amberGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Grid -->
+  <g stroke="#ffaa00" stroke-opacity="0.08" stroke-width="1">
+    <line x1="0" y1="75" x2="800" y2="75" /><line x1="0" y1="150" x2="800" y2="150" />
+    <line x1="0" y1="225" x2="800" y2="225" /><line x1="0" y1="300" x2="800" y2="300" />
+    <line x1="0" y1="375" x2="800" y2="375" /><line x1="200" y1="0" x2="200" y2="450" />
+    <line x1="400" y1="0" x2="400" y2="450" /><line x1="600" y1="0" x2="600" y2="450" />
+  </g>
+
+  <!-- Header HUD Bar -->
+  <rect x="25" y="20" width="750" height="36" rx="3" fill="#141008" stroke="#ffaa00" stroke-opacity="0.4" stroke-width="1"/>
+  <circle cx="45" cy="38" r="4" fill="#ffaa00" filter="url(#amberGlow)" />
+  <text x="60" y="42" fill="#ffaa00" font-size="12" font-weight="bold" letter-spacing="1.5">CAE PREPROCESSING SUITE // HYPERMESH TCL AUTOMATION STUDIO</text>
+  <text x="620" y="42" fill="#cca87a" font-size="11">ENGINE: TCL/TK • HYPERMESH</text>
+
+  <!-- Node 1: CAD Clean-up & Geometry Prep -->
+  <rect x="35" y="75" width="220" height="345" rx="4" fill="url(#amberCard)" stroke="#ffaa00" stroke-opacity="0.3" stroke-width="1"/>
+  <rect x="35" y="75" width="220" height="28" rx="4" fill="#241a0e" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="50" y="93" fill="#ffaa00" font-size="11" font-weight="bold">01 // CAD CLEANUP &amp; MID</text>
+
+  <!-- Raw CAD vs Midsurface Extraction -->
+  <rect x="50" y="115" width="190" height="85" rx="3" fill="#120e08" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="60" y="135" fill="#ffffff" font-size="10" font-weight="bold">GEOMETRY AUTOMATION</text>
+  <text x="60" y="152" fill="#d0b898" font-size="9">• Auto-Defeaturing (Fillets &lt; 3mm)</text>
+  <text x="60" y="167" fill="#d0b898" font-size="9">• Midsurface Extraction</text>
+  <text x="60" y="182" fill="#d0b898" font-size="9">• Edge Stitching &amp; Suppress</text>
+
+  <!-- Washer Creation Macro -->
+  <rect x="50" y="210" width="190" height="85" rx="3" fill="#120e08" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="60" y="230" fill="#00ffff" font-size="10" font-weight="bold">WASHER / HOLE SPLIT</text>
+  <text x="60" y="248" fill="#d0b898" font-size="9">• Parametric Washer Radius</text>
+  <text x="60" y="263" fill="#d0b898" font-size="9">• Bolt Hole Auto-Remesh</text>
+  <text x="60" y="278" fill="#00ff66" font-size="9">• 1-Click Batch Execution</text>
+
+  <!-- Before / After Stats -->
+  <rect x="50" y="305" width="190" height="100" rx="3" fill="#120e08" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="60" y="325" fill="#ffaa00" font-size="10" font-weight="bold">TIME SAVINGS METRIC</text>
+  <text x="60" y="343" fill="#888888" font-size="9">Manual CAD Setup: ~45 min</text>
+  <text x="60" y="360" fill="#00ff66" font-size="10" font-weight="bold">Tcl Macro Setup: 1.8 min</text>
+  <text x="60" y="380" fill="#00ffff" font-size="9">&gt; 96% Preprocessing Acceleration</text>
+
+  <!-- Flow Connector 1 -->
+  <path d="M 255 240 L 295 240" fill="none" stroke="#ffaa00" stroke-width="2" stroke-dasharray="4,4" filter="url(#amberGlow)"/>
+  <polygon points="295,235 305,240 295,245" fill="#ffaa00"/>
+
+  <!-- Node 2: Mesh Generation & Quality Validation -->
+  <rect x="305" y="75" width="225" height="345" rx="4" fill="url(#amberCard)" stroke="#ffaa00" stroke-opacity="0.6" stroke-width="1.5"/>
+  <rect x="305" y="75" width="225" height="28" rx="4" fill="#2a1e10" stroke="#ffaa00" stroke-opacity="0.3"/>
+  <text x="320" y="93" fill="#ffaa00" font-size="11" font-weight="bold">02 // AUTO-MESH &amp; QUALITY</text>
+
+  <!-- 2D Quad/Tria Visual Grid -->
+  <g transform="translate(325, 115)">
+    <rect x="0" y="0" width="185" height="110" rx="3" fill="#080705" stroke="#ffaa00" stroke-opacity="0.4"/>
+    <!-- Quad Grid Wireframe -->
+    <g stroke="#00ff66" stroke-width="1" stroke-opacity="0.7">
+      <line x1="15" y1="15" x2="170" y2="15" /><line x1="15" y1="40" x2="170" y2="40" />
+      <line x1="15" y1="65" x2="170" y2="65" /><line x1="15" y1="95" x2="170" y2="95" />
+      <line x1="15" y1="15" x2="15" y2="95" /><line x1="55" y1="15" x2="55" y2="95" />
+      <line x1="95" y1="15" x2="95" y2="95" /><line x1="135" y1="15" x2="135" y2="95" />
+      <line x1="170" y1="15" x2="170" y2="95" />
+      <!-- Diagonal tria mesh lines -->
+      <line x1="55" y1="40" x2="95" y2="65" stroke="#00c8ff"/>
+      <line x1="95" y1="40" x2="135" y2="65" stroke="#00c8ff"/>
+    </g>
+    <text x="20" y="105" fill="#00ff66" font-size="8" font-weight="bold">ELEMENT SIZE: 5.0mm MIXED QUAD</text>
+  </g>
+
+  <!-- Quality Checks Table -->
+  <rect x="325" y="240" width="185" height="165" rx="3" fill="#100d07" stroke="#ffaa00" stroke-opacity="0.3"/>
+  <text x="335" y="258" fill="#ffaa00" font-size="10" font-weight="bold">QUALITY CRITERIA CHECKS:</text>
+  <text x="335" y="278" fill="#ffffff" font-size="9">Aspect Ratio (&lt; 5.0): <tspan fill="#00ff66" font-weight="bold">PASS (1.2)</tspan></text>
+  <text x="335" y="295" fill="#ffffff" font-size="9">Skewness (&lt; 45°):     <tspan fill="#00ff66" font-weight="bold">PASS (8.4°)</tspan></text>
+  <text x="335" y="312" fill="#ffffff" font-size="9">Warpage (&lt; 15°):      <tspan fill="#00ff66" font-weight="bold">PASS (1.1°)</tspan></text>
+  <text x="335" y="329" fill="#ffffff" font-size="9">Jacobian (&gt; 0.7):     <tspan fill="#00ff66" font-weight="bold">PASS (0.92)</tspan></text>
+  <text x="335" y="352" fill="#00c8ff" font-size="9">Auto-Smooth &amp; Remesh Failed</text>
+  <text x="335" y="370" fill="#00ff66" font-size="9" font-weight="bold">ZERO FAILED ELEMENTS</text>
+  <text x="335" y="388" fill="#cca87a" font-size="8">Batch Log: hypermesh_log.tcl</text>
+
+  <!-- Flow Connector 2 -->
+  <path d="M 530 240 L 570 240" fill="none" stroke="#ffaa00" stroke-width="2" stroke-dasharray="4,4" filter="url(#amberGlow)"/>
+  <polygon points="570,235 580,240 570,245" fill="#ffaa00"/>
+
+  <!-- Node 3: Solver Deck Export & Connectors -->
+  <rect x="580" y="75" width="190" height="345" rx="4" fill="url(#amberCard)" stroke="#ffaa00" stroke-opacity="0.3" stroke-width="1"/>
+  <rect x="580" y="75" width="190" height="28" rx="4" fill="#241a0e" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="595" y="93" fill="#ffaa00" font-size="11" font-weight="bold">03 // SOLVER DECK</text>
+
+  <!-- Connectors Setup -->
+  <rect x="595" y="115" width="160" height="85" rx="3" fill="#120e08" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="605" y="135" fill="#00ff66" font-size="10" font-weight="bold">1D/2D CONNECTORS</text>
+  <text x="605" y="152" fill="#d0b898" font-size="9">• RBE2 Rigid Spiders</text>
+  <text x="605" y="167" fill="#d0b898" font-size="9">• RBE3 Distributed Load</text>
+  <text x="605" y="182" fill="#d0b898" font-size="9">• Spot Weld &amp; Seam Weld</text>
+
+  <!-- Material & Property Setup -->
+  <rect x="595" y="210" width="160" height="90" rx="3" fill="#120e08" stroke="#ffaa00" stroke-opacity="0.2"/>
+  <text x="605" y="230" fill="#00c8ff" font-size="10" font-weight="bold">PROPERTY &amp; MAT</text>
+  <text x="605" y="248" fill="#d0b898" font-size="9">MAT1 (Steel, Al6061)</text>
+  <text x="605" y="263" fill="#d0b898" font-size="9">PSHELL Shell Thickness</text>
+  <text x="605" y="278" fill="#d0b898" font-size="9">PSOLID 3D Formulations</text>
+
+  <!-- Solver Export -->
+  <rect x="595" y="310" width="160" height="95" rx="3" fill="#120e08" stroke="#00ff66" stroke-width="1"/>
+  <text x="605" y="330" fill="#00ff66" font-size="10" font-weight="bold">SOLVER EXPORT</text>
+  <text x="605" y="348" fill="#ffffff" font-size="9">OptiStruct (.fem)</text>
+  <text x="605" y="364" fill="#ffffff" font-size="9">Nastran (.bdf)</text>
+  <text x="605" y="380" fill="#ffffff" font-size="9">Abaqus (.inp)</text>
+  <text x="605" y="396" fill="#00ff66" font-size="8" font-weight="bold">AUTOMATED STUDIO LIVE</text>
+</svg>

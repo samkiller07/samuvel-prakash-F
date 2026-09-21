@@ -4,7 +4,7 @@ export const DEFAULT_PROFILE_BUCKET = 'profile-media';
 export const DEFAULT_PROJECT_BUCKET = 'portfolio-media';
 export const DEFAULT_BUCKET = DEFAULT_PROJECT_BUCKET;
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/svg+xml'];
 
 export interface UploadResult {
   success: boolean;
@@ -15,7 +15,7 @@ export interface UploadResult {
 
 export const storageService = {
   /**
-   * Resolves any stored value (full URL, relative storage path, or bucket path) into a valid public URL.
+   * Resolves any stored value (full URL, relative asset path, or Supabase storage path) into a valid public URL.
    */
   resolveStorageUrl(
     pathOrUrl: string | null | undefined,
@@ -33,6 +33,18 @@ export const storageService = {
       trimmed.startsWith('blob:')
     ) {
       return trimmed;
+    }
+
+    // Relative project assets
+    if (trimmed.startsWith('./') || trimmed.startsWith('/') || trimmed.startsWith('assets/')) {
+      const base = import.meta.env.BASE_URL || './';
+      if (trimmed.startsWith('./')) {
+        return trimmed;
+      }
+      if (trimmed.startsWith('/')) {
+        return `${base.replace(/\/$/, '')}${trimmed}`;
+      }
+      return `${base.replace(/\/$/, '')}/${trimmed}`;
     }
 
     if (!isSupabaseConfigured() || !supabase) {
@@ -79,7 +91,7 @@ export const storageService = {
     if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
       return {
         success: false,
-        error: `Invalid file format (${file.type}). Supported formats: JPG, JPEG, PNG, WEBP.`
+        error: `Invalid file format (${file.type}). Supported formats: JPG, JPEG, PNG, WEBP, SVG.`
       };
     }
 
@@ -170,4 +182,3 @@ export const storageService = {
     return { success: true };
   }
 };
-

@@ -4,7 +4,19 @@ import { Modal } from '../ui/Modal';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
 import { MediaGallery } from './MediaGallery';
-import { Github, ExternalLink, Cpu, GitBranch, Target, Wrench, CheckCircle2, Workflow, Layers } from 'lucide-react';
+import { storageService } from '../../services/storageService';
+import {
+  Github,
+  ExternalLink,
+  Cpu,
+  GitBranch,
+  Target,
+  Wrench,
+  CheckCircle2,
+  Workflow,
+  Layers,
+  Image as ImageIcon
+} from 'lucide-react';
 
 interface ProjectDetailModalProps {
   project: Project | null;
@@ -19,6 +31,8 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 }) => {
   if (!project) return null;
 
+  const resolvedThumbnail = storageService.resolveStorageUrl(project.thumbnail_url);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -27,17 +41,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
       systemTag={`SPEC.${project.category.replace(/[^A-Z]/g, '').substring(0, 4) || 'ENG'}`}
       maxWidth="4xl"
     >
-      <div className="space-y-8 font-sans">
+      <div className="space-y-6 font-sans">
         {/* Module Header Bar */}
         <div className="p-4 bg-hud-panel border border-hud-border rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <StatusBadge status={project.status} />
               <span className="text-xs font-mono text-hud-muted">|</span>
-              <span className="text-xs font-mono text-hud-green uppercase">{project.category}</span>
+              <span className="text-xs font-mono text-hud-green uppercase font-bold">{project.category}</span>
             </div>
             <div className="text-xs font-mono text-hud-slate">
-              SLUG_ID: <span className="text-hud-text">{project.slug}</span>
+              MODULE ID: <span className="text-hud-text">{project.slug}</span>
             </div>
           </div>
 
@@ -47,7 +61,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 href={project.github_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-hud-card border border-hud-border hover:border-hud-green text-xs font-mono text-hud-text hover:text-hud-bright transition-colors rounded-sm"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-hud-card border border-hud-border hover:border-hud-green text-xs font-mono text-hud-text hover:text-hud-bright transition-colors rounded-sm cursor-pointer"
               >
                 <Github className="w-3.5 h-3.5 text-hud-green" />
                 <span>GITHUB REPO</span>
@@ -58,7 +72,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 href={project.demo_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-hud-card border border-hud-cyan/50 hover:border-hud-cyan text-xs font-mono text-hud-cyan transition-colors rounded-sm"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-hud-card border border-hud-cyan/50 hover:border-hud-cyan text-xs font-mono text-hud-cyan transition-colors rounded-sm cursor-pointer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>LIVE DEMO</span>
@@ -67,14 +81,34 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </div>
         </div>
 
+        {/* Primary Project Visual Banner / Architecture Diagram */}
+        {resolvedThumbnail && (
+          <div className="rounded-sm overflow-hidden border border-hud-border bg-black/60 relative group">
+            <div className="aspect-[16/9] sm:aspect-[21/9] max-h-[320px] w-full flex items-center justify-center overflow-hidden bg-hud-panel/40">
+              <img
+                src={resolvedThumbnail}
+                alt={`${project.title} technical architecture`}
+                className="w-full h-full object-contain object-center"
+              />
+            </div>
+            <div className="p-2 bg-hud-card border-t border-hud-border flex items-center justify-between text-[11px] font-mono text-hud-slate">
+              <div className="flex items-center gap-1.5 text-hud-green">
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>TECHNICAL SYSTEM SPECIFICATION &amp; HARDWARE ARCHITECTURE</span>
+              </div>
+              <span className="text-hud-muted">[VERIFIED MODULE]</span>
+            </div>
+          </div>
+        )}
+
         {/* Short Executive Overview */}
-        <div className="text-sm sm:text-base text-hud-bright leading-relaxed border-l-2 border-hud-green pl-4">
+        <div className="text-sm sm:text-base text-hud-bright leading-relaxed border-l-2 border-hud-green pl-4 bg-hud-panel/40 p-3 rounded-r-sm">
           {project.short_description}
         </div>
 
         {/* Technologies Grid */}
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
             <Cpu className="w-4 h-4" />
             <span>TECHNOLOGY STACK &amp; PROTOCOLS</span>
           </div>
@@ -91,10 +125,10 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Structured Engineering Spec Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Problem */}
           <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-2">
-            <div className="flex items-center gap-2 text-xs font-mono text-hud-amber uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-mono text-hud-amber uppercase tracking-wider font-semibold">
               <Target className="w-4 h-4" />
               <span>THE ENGINEERING PROBLEM</span>
             </div>
@@ -105,7 +139,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
           {/* Approach */}
           <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-2">
-            <div className="flex items-center gap-2 text-xs font-mono text-hud-cyan uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-mono text-hud-cyan uppercase tracking-wider font-semibold">
               <GitBranch className="w-4 h-4" />
               <span>ENGINEERING APPROACH &amp; DESIGN</span>
             </div>
@@ -115,31 +149,31 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </div>
         </div>
 
+        {/* System Architecture Block */}
+        <div className="p-4 bg-hud-card border border-hud-border-bright rounded-sm space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
+            <Layers className="w-4 h-4" />
+            <span>SYSTEM ARCHITECTURE DIAGRAM FLOW</span>
+          </div>
+          <div className="p-3 bg-hud-panel border border-hud-border font-mono text-xs text-hud-bright rounded-sm overflow-x-auto whitespace-pre-wrap leading-relaxed">
+            {project.system_architecture}
+          </div>
+        </div>
+
         {/* What I Built */}
         <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-2">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
             <Wrench className="w-4 h-4" />
-            <span>WHAT I BUILT &amp; HARDWARE/SOFTWARE INTEGRATION</span>
+            <span>WHAT I BUILT &amp; HARDWARE / SOFTWARE INTEGRATION</span>
           </div>
           <p className="text-xs sm:text-sm text-hud-slate leading-relaxed">
             {project.what_i_built}
           </p>
         </div>
 
-        {/* System Architecture Block */}
-        <div className="p-4 bg-hud-card border border-hud-border-bright rounded-sm space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
-            <Layers className="w-4 h-4" />
-            <span>SYSTEM ARCHITECTURE DIAGRAM FLOW</span>
-          </div>
-          <div className="p-3 bg-hud-panel border border-hud-border font-mono text-xs text-hud-text rounded-sm overflow-x-auto whitespace-pre-wrap leading-relaxed">
-            {project.system_architecture}
-          </div>
-        </div>
-
         {/* Workflow & Execution */}
         <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-2">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
             <Workflow className="w-4 h-4" />
             <span>OPERATION &amp; CONTROL WORKFLOW</span>
           </div>
@@ -149,8 +183,8 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Results & Empirical Outcomes */}
-        <div className="p-4 bg-hud-panel border border-hud-green/40 bg-hud-green/[0.03] rounded-sm space-y-2">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
+        <div className="p-4 bg-hud-panel border border-hud-green/50 bg-hud-green/[0.04] rounded-sm space-y-2">
+          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
             <CheckCircle2 className="w-4 h-4 text-hud-green" />
             <span>MEASURED RESULTS &amp; OUTCOMES</span>
           </div>
@@ -159,19 +193,21 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </p>
         </div>
 
-        {/* Media Gallery / Diagrams / Schematics */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider">
-            <Layers className="w-4 h-4" />
-            <span>TECHNICAL MEDIA &amp; SCHEMATIC ATTACHMENTS</span>
+        {/* Media Gallery / Diagrams / Schematics (if extra items present) */}
+        {project.media && project.media.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 text-xs font-mono text-hud-green uppercase tracking-wider font-semibold">
+              <Layers className="w-4 h-4" />
+              <span>TECHNICAL MEDIA &amp; SCHEMATIC ATTACHMENTS</span>
+            </div>
+            <MediaGallery media={project.media} projectTitle={project.title} />
           </div>
-          <MediaGallery media={project.media} projectTitle={project.title} />
-        </div>
+        )}
 
         {/* Footer Actions */}
         <div className="pt-4 border-t border-hud-border flex items-center justify-between">
           <div className="text-[11px] font-mono text-hud-muted">
-            STATUS: <span className="text-hud-green">VERIFIED ARCHITECTURE</span>
+            STATUS: <span className="text-hud-green font-bold">VERIFIED ARCHITECTURE</span>
           </div>
           <Button variant="secondary" size="sm" onClick={onClose}>
             CLOSE SPECIFICATION

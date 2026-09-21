@@ -7,6 +7,7 @@ import { SkillsSection } from './sections/SkillsSection';
 import { ProjectsSection } from './sections/ProjectsSection';
 import { AchievementsSection } from './sections/AchievementsSection';
 import { CertificationsSection } from './sections/CertificationsSection';
+import { ServicesSection } from './sections/ServicesSection';
 import { CommentsSection } from './sections/CommentsSection';
 import { ContactSection } from './sections/ContactSection';
 import { AdminLogin } from './components/admin/AdminLogin';
@@ -93,6 +94,13 @@ export const App: React.FC = () => {
     handleNavigate('home');
   };
 
+  const handleStartProject = () => {
+    const el = document.getElementById('contact-form') || document.getElementById('contact');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-hud-bg text-hud-text selection:bg-hud-green selection:text-black">
       {/* Optional System Boot Diagnostics Sequence */}
@@ -137,6 +145,7 @@ export const App: React.FC = () => {
           <ProjectsSection />
           <AchievementsSection />
           <CertificationsSection />
+          <ServicesSection onStartProject={handleStartProject} />
           <CommentsSection />
           <ContactSection />
         </main>
