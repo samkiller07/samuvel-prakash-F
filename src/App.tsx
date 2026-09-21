@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HeroSection } from './sections/HeroSection';
-import { AboutSection } from './sections/AboutSection';
-import { SkillsSection } from './sections/SkillsSection';
+import { ServicesSection } from './sections/ServicesSection';
 import { ProjectsSection } from './sections/ProjectsSection';
+import { SkillsSection } from './sections/SkillsSection';
 import { AchievementsSection } from './sections/AchievementsSection';
 import { CertificationsSection } from './sections/CertificationsSection';
-import { ServicesSection } from './sections/ServicesSection';
+import { AboutSection } from './sections/AboutSection';
 import { CommentsSection } from './sections/CommentsSection';
 import { ContactSection } from './sections/ContactSection';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { SystemBoot } from './components/ui/SystemBoot';
+import { CommandTerminal } from './components/ui/CommandTerminal';
 import { authService, UserSession } from './services/authService';
 import { Loader2 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
   const [bootSequenceActive, setBootSequenceActive] = useState(true);
   const [session, setSession] = useState<UserSession | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(undefined);
 
   // Check initial route (hash or pathname)
   useEffect(() => {
@@ -84,6 +86,17 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleScrollToSection = (sectionId: string) => {
+    if (currentView === 'admin') {
+      handleNavigate('home', sectionId);
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   const handleLoginSuccess = (newSession: UserSession) => {
     setSession(newSession);
   };
@@ -94,7 +107,10 @@ export const App: React.FC = () => {
     handleNavigate('home');
   };
 
-  const handleStartProject = () => {
+  const handleStartProject = (serviceId?: string) => {
+    if (serviceId) {
+      setSelectedServiceId(serviceId);
+    }
     const el = document.getElementById('contact-form') || document.getElementById('contact');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -134,20 +150,47 @@ export const App: React.FC = () => {
         </main>
       ) : (
         <main>
+          {/* 00 HERO SECTION */}
           <HeroSection
-            onExploreProjects={() => {
-              const el = document.getElementById('projects');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onExploreProjects={() => handleScrollToSection('projects')}
+            onStartProject={() => handleStartProject()}
           />
-          <AboutSection />
-          <SkillsSection />
+
+          {/* HUD COMMAND TERMINAL & QUICK MODULE SELECTOR */}
+          <CommandTerminal
+            onNavigate={handleScrollToSection}
+            onStartProject={() => handleStartProject()}
+          />
+
+          {/* 01 WHAT DO YOU NEED TO BUILD? — FREELANCE SERVICES */}
+          <ServicesSection
+            onStartProject={handleStartProject}
+            onViewProject={(slug) => handleScrollToSection('projects')}
+          />
+
+          {/* 02 WHAT I BUILT — INTERACTIVE PROJECT WORKSTATION */}
           <ProjectsSection />
+
+          {/* 03 WHAT I CAN WORK WITH — CAPABILITY MAP */}
+          <SkillsSection
+            onNavigateToProjects={() => handleScrollToSection('projects')}
+            onNavigateToServices={handleStartProject}
+          />
+
+          {/* 04 WHAT I DEMONSTRATED — HONORS & COMPETITIONS */}
           <AchievementsSection />
+
+          {/* 05 WHAT I LEARNED — CERTIFICATIONS */}
           <CertificationsSection />
-          <ServicesSection onStartProject={handleStartProject} />
+
+          {/* 06 SYSTEM SPECIFICATION — CORE OPERATOR PROFILE */}
+          <AboutSection onStartProject={() => handleStartProject()} />
+
+          {/* 07 PEER REVIEWS & FEEDBACK */}
           <CommentsSection />
-          <ContactSection />
+
+          {/* 08 START A PROJECT — DIRECT CLIENT INQUIRY FORM */}
+          <ContactSection selectedService={selectedServiceId} />
         </main>
       )}
 

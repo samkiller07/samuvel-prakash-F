@@ -40,19 +40,43 @@ const SERVICE_OPTIONS = [
   'General Engineering Inquiry / Career Role'
 ];
 
-export const ContactSection: React.FC = () => {
+interface ContactSectionProps {
+  selectedService?: string;
+}
+
+export const ContactSection: React.FC<ContactSectionProps> = ({ selectedService }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [serviceType, setServiceType] = useState(SERVICE_OPTIONS[0]);
+  const [serviceType, setServiceType] = useState(() => {
+    if (selectedService) {
+      if (selectedService === 'embedded-iot') return SERVICE_OPTIONS[0];
+      if (selectedService === 'industrial-plc') return SERVICE_OPTIONS[1];
+      if (selectedService === 'computer-vision') return SERVICE_OPTIONS[2];
+      if (selectedService === 'engineering-software') return SERVICE_OPTIONS[3];
+      if (selectedService === 'engineering-dashboards') return SERVICE_OPTIONS[4];
+    }
+    return SERVICE_OPTIONS[0];
+  });
   const [requirement, setRequirement] = useState('');
   const [deadline, setDeadline] = useState('Flexible');
   const [budget, setBudget] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Sync selectedService prop updates
+  React.useEffect(() => {
+    if (selectedService) {
+      if (selectedService === 'embedded-iot') setServiceType(SERVICE_OPTIONS[0]);
+      else if (selectedService === 'industrial-plc') setServiceType(SERVICE_OPTIONS[1]);
+      else if (selectedService === 'computer-vision') setServiceType(SERVICE_OPTIONS[2]);
+      else if (selectedService === 'engineering-software') setServiceType(SERVICE_OPTIONS[3]);
+      else if (selectedService === 'engineering-dashboards') setServiceType(SERVICE_OPTIONS[4]);
+    }
+  }, [selectedService]);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(CONTACT_INFO.email);

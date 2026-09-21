@@ -40,14 +40,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navItems = [
-    { id: 'about', label: '01 ABOUT' },
-    { id: 'skills', label: '02 SKILLS' },
-    { id: 'projects', label: '03 PROJECTS' },
+    { id: 'services', label: '01 SERVICES' },
+    { id: 'projects', label: '02 PROJECTS' },
+    { id: 'skills', label: '03 SKILLS' },
     { id: 'achievements', label: '04 AWARDS' },
     { id: 'certifications', label: '05 CERTS' },
-    { id: 'services', label: '06 SERVICES' },
+    { id: 'about', label: '06 ABOUT' },
     { id: 'comments', label: '07 REVIEWS' },
-    { id: 'contact', label: '08 CONTACT' }
+    { id: 'contact', label: '08 INQUIRE' }
   ];
 
   const handleNavClick = (id: string) => {

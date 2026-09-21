@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types/project';
 import { projectService } from '../services/projectService';
-import { ProjectGrid } from '../components/projects/ProjectGrid';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { ProjectShowcase } from '../components/projects/ProjectShowcase';
 import { Database, HardDrive, RefreshCw } from 'lucide-react';
 
 export const ProjectsSection: React.FC = () => {
@@ -19,7 +18,6 @@ export const ProjectsSection: React.FC = () => {
       setProjects(res.data);
       setDataSource(res.source);
       if (res.error) {
-        // Soft error logged, local fallback displayed
         console.warn('Projects loaded via fallback store:', res.error);
       }
     } catch (err: any) {
@@ -34,17 +32,17 @@ export const ProjectsSection: React.FC = () => {
   }, []);
 
   return (
-    <section id="projects" className="py-20 px-4 sm:px-6 lg:px-8 bg-hud-card/30 border-t border-hud-border">
-      <div className="max-w-7xl mx-auto space-y-10">
+    <section id="projects" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-hud-card/30 border-t border-hud-border">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 font-mono text-xs text-hud-green uppercase tracking-widest">
               <span className="w-2 h-2 bg-hud-green rounded-full" />
-              <span>03 // WHAT I BUILT &bull; ENGINEERING PROJECTS</span>
+              <span>02 // WHAT I BUILT &bull; INTERACTIVE PROJECT WORKSTATION</span>
             </div>
             <h2 className="font-tech text-3xl sm:text-4xl font-bold uppercase tracking-wide text-hud-bright">
-              FEATURED ENGINEERING PROJECTS
+              FEATURED ENGINEERING WORK
             </h2>
             <div className="circuit-line-h w-48" />
           </div>
@@ -60,14 +58,14 @@ export const ProjectsSection: React.FC = () => {
               ) : (
                 <>
                   <HardDrive className="w-3.5 h-3.5 text-hud-cyan" />
-                  <span className="text-hud-slate">AUTONOMOUS LOCAL REPO</span>
+                  <span className="text-hud-slate">LOCAL ENGINEERING BUS</span>
                 </>
               )}
             </div>
 
             <button
               onClick={fetchProjects}
-              className="p-1.5 bg-hud-panel hover:bg-hud-hover border border-hud-border hover:border-hud-green text-hud-muted hover:text-hud-green rounded-sm transition-colors"
+              className="p-1.5 bg-hud-panel hover:bg-hud-hover border border-hud-border hover:border-hud-green text-hud-muted hover:text-hud-green rounded-sm transition-colors cursor-pointer"
               title="Refresh project telemetry"
               aria-label="Refresh project telemetry"
             >
@@ -76,8 +74,12 @@ export const ProjectsSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Dynamic Project Grid */}
-        <ProjectGrid
+        <p className="max-w-3xl text-sm sm:text-base text-hud-slate leading-relaxed font-sans">
+          Explore real-world engineering systems built across embedded hardware, IoT, industrial PLC sequencing, computer vision, and CAE workflow automation. Select any project deck to view live architecture.
+        </p>
+
+        {/* Single-Dominant Workstation Project Showcase */}
+        <ProjectShowcase
           projects={projects}
           isLoading={isLoading}
           error={error}
