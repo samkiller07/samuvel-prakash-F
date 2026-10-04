@@ -1,12 +1,12 @@
 import { Project, ProjectFormData } from '../types/project';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { INITIAL_PROJECTS } from '../data/initialProjects';
+import { INITIAL_PROJECTS, INITIAL_CLIENT_PROJECTS, ALL_INITIAL_PROJECTS } from '../data/initialProjects';
 import { storageService } from './storageService';
 
 export const projectService = {
   /**
    * Fetch all projects (sorted by sort_order).
-   * Reads from Supabase if configured; falls back to verified INITIAL_PROJECTS.
+   * Reads from Supabase if configured; falls back to verified ALL_INITIAL_PROJECTS.
    */
   async getAllProjects(): Promise<{ data: Project[]; source: 'supabase' | 'local'; error?: string }> {
     if (isSupabaseConfigured() && supabase) {
@@ -21,7 +21,7 @@ export const projectService = {
 
         if (error) {
           console.warn('[Supabase API] Failed to fetch remote projects, using verified dataset:', error.message);
-          return { data: INITIAL_PROJECTS, source: 'local', error: error.message };
+          return { data: ALL_INITIAL_PROJECTS, source: 'local', error: error.message };
         }
 
         if (data && data.length > 0) {
@@ -39,21 +39,45 @@ export const projectService = {
 
             return {
               ...p,
+              project_type: p.project_type || 'personal',
+              is_published: p.is_published !== undefined ? p.is_published : true,
               thumbnail_url: finalThumbnail,
               media: mediaList
             };
           });
           return { data: formatted, source: 'supabase' };
         } else {
-          return { data: INITIAL_PROJECTS, source: 'local' };
+          return { data: ALL_INITIAL_PROJECTS, source: 'local' };
         }
       } catch (err: any) {
         console.warn('[Supabase API] Network exception, using verified dataset:', err.message);
-        return { data: INITIAL_PROJECTS, source: 'local', error: err.message };
+        return { data: ALL_INITIAL_PROJECTS, source: 'local', error: err.message };
       }
     }
 
-    return { data: INITIAL_PROJECTS, source: 'local' };
+    return { data: ALL_INITIAL_PROJECTS, source: 'local' };
+  },
+
+  /**
+   * Fetch published personal / engineering projects
+   */
+  async getPersonalProjects(): Promise<{ data: Project[]; source: 'supabase' | 'local'; error?: string }> {
+    const res = await this.getAllProjects();
+    const filtered = res.data.filter(
+      (p) => (p.project_type === 'personal' || !p.project_type) && (p.is_published !== false)
+    );
+    return { data: filtered, source: res.source, error: res.error };
+  },
+
+  /**
+   * Fetch published client delivery projects
+   */
+  async getClientProjects(): Promise<{ data: Project[]; source: 'supabase' | 'local'; error?: string }> {
+    const res = await this.getAllProjects();
+    const filtered = res.data.filter(
+      (p) => p.project_type === 'client' && (p.is_published !== false)
+    );
+    return { data: filtered, source: res.source, error: res.error };
   },
 
   /**
@@ -62,6 +86,13 @@ export const projectService = {
   async getProjectBySlug(slug: string): Promise<Project | null> {
     const { data } = await this.getAllProjects();
     return data.find((p) => p.slug === slug) || null;
+  },
+
+  /**
+   * Quick toggle publish status (Requires authenticated authorized admin)
+   */
+  async togglePublishStatus(id: string, is_published: boolean): Promise<{ project: Project }> {
+    return this.updateProject(id, { is_published });
   },
 
   /**
@@ -75,9 +106,15 @@ export const projectService = {
     }
 
     const { media, ...dbPayload } = formData;
+    const payloadToInsert = {
+      ...dbPayload,
+      project_type: dbPayload.project_type || 'personal',
+      is_published: dbPayload.is_published !== undefined ? dbPayload.is_published : true
+    };
+
     const { data: inserted, error } = await supabase
       .from('projects')
-      .insert([dbPayload])
+      .insert([payloadToInsert])
       .select()
       .single();
 
@@ -177,9 +214,10 @@ export const projectService = {
   },
 
   /**
-   * Reset to verified default 6 projects
+   * Reset to verified default projects
    */
   resetToDefaults(): Project[] {
-    return INITIAL_PROJECTS;
+    return ALL_INITIAL_PROJECTS;
   }
 };
+

@@ -14,7 +14,7 @@ export const ProjectsSection: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await projectService.getAllProjects();
+      const res = await projectService.getPersonalProjects();
       setProjects(res.data);
       setDataSource(res.source);
       if (res.error) {

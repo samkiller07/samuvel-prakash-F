@@ -46,6 +46,8 @@ export const INITIAL_PROJECTS: Project[] = [
 
     featured: true,
     sort_order: 1,
+    project_type: 'personal',
+    is_published: true,
 
     media: [
       {
@@ -328,6 +330,8 @@ export const INITIAL_PROJECTS: Project[] = [
 
     featured: false,
     sort_order: 6,
+    project_type: 'personal',
+    is_published: true,
 
     media: [
       {
@@ -338,4 +342,50 @@ export const INITIAL_PROJECTS: Project[] = [
       }
     ]
   }
+];
+
+export const INITIAL_CLIENT_PROJECTS: Project[] = [
+  {
+    id: 'cp1-software-developer-portfolio',
+    slug: 'software-developer-portfolio',
+    title: 'Software Developer Portfolio',
+    short_description:
+      'Built and delivered a personal portfolio website for a software developer based on the client\'s requirements.',
+    category: 'Software & AI',
+    status: 'COMPLETED',
+    technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Supabase'],
+    thumbnail_url: './assets/projects/internship-recommendation.svg',
+    github_url: null,
+    demo_url: 'https://samkiller07.github.io/anubama-portfolio/',
+    problem:
+      'Client required a sleek, high-performance portfolio website to showcase development projects, technical proficiencies, and contact avenues.',
+    engineering_approach:
+      'Engineered a modern, responsive single-page web application leveraging modular React architecture, Tailwind CSS styling, and optimized asset delivery.',
+    what_i_built:
+      'Delivered a complete, responsive developer portfolio featuring dynamic project showcase, interactive contact form, and mobile-optimized layouts.',
+    system_architecture:
+      'React Components -> Tailwind CSS Design System -> Supabase Backend Integration -> Production Web Deployment',
+    workflow:
+      'Requirements intake -> Component structure & styling -> Form validation & API wiring -> Cross-browser QA -> Delivered to client.',
+    results_outcome:
+      'Successfully built and delivered in 1 day with full responsive support across mobile, tablet, and desktop devices.',
+    featured: true,
+    sort_order: 1,
+    project_type: 'client',
+    is_published: true,
+    delivery_time: '1 day',
+    media: [
+      {
+        type: 'image',
+        url: './assets/projects/internship-recommendation.svg',
+        caption: 'Client software developer portfolio user interface and responsive design.',
+        sort_order: 1
+      }
+    ]
+  }
+];
+
+export const ALL_INITIAL_PROJECTS: Project[] = [
+  ...INITIAL_PROJECTS.map((p) => ({ ...p, project_type: 'personal' as const, is_published: true })),
+  ...INITIAL_CLIENT_PROJECTS
 ];

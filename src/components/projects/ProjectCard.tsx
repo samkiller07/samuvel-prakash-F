@@ -25,7 +25,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
             {project.category}
           </span>
         </div>
-        <StatusBadge status={project.status} size="sm" />
+        <StatusBadge status={project.status as any} size="sm" />
       </div>
 
       {/* Project Thumbnail with overlay */}

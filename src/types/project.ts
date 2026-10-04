@@ -19,13 +19,15 @@ export interface ProjectMedia {
   sort_order: number;
 }
 
+export type ProjectType = 'personal' | 'client';
+
 export interface Project {
   id: string;
   slug: string;
   title: string;
   short_description: string;
   category: ProjectCategory | string;
-  status: ProjectStatus;
+  status: ProjectStatus | string;
   technologies: string[];
   thumbnail_url?: string | null;
   github_url?: string | null;
@@ -38,6 +40,10 @@ export interface Project {
   results_outcome: string;
   featured: boolean;
   sort_order: number;
+  project_type?: ProjectType;
+  is_published?: boolean;
+  delivery_time?: string | null;
+  client_name?: string | null;
   created_at?: string;
   updated_at?: string;
   media?: ProjectMedia[];
@@ -46,3 +52,4 @@ export interface Project {
 export type ProjectFormData = Omit<Project, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
 };
+

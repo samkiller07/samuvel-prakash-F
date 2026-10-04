@@ -50,8 +50,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [newProjectType, setNewProjectType] = useState<'personal' | 'client'>('personal');
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'personal' | 'client'>('all');
+
 
   // Profile state
   const [profile, setProfile] = useState<ProfileData>(profileService.getDefaultProfile());
@@ -172,7 +175,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   };
 
   // Project Handlers
-  const handleOpenCreateProject = () => {
+  const handleOpenCreateProject = (type: 'personal' | 'client' = 'personal') => {
+    setNewProjectType(type);
     setEditingProject(null);
     setIsFormModalOpen(true);
   };
@@ -180,6 +184,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const handleOpenEditProject = (project: Project) => {
     setEditingProject(project);
     setIsFormModalOpen(true);
+  };
+
+  const handleTogglePublish = async (proj: Project) => {
+    const newStatus = !(proj.is_published !== false);
+    try {
+      await projectService.togglePublishStatus(proj.id, newStatus);
+      notify(`Project "${proj.title}" is now ${newStatus ? 'PUBLISHED (Live)' : 'UNPUBLISHED (Draft)'}.`);
+      const res = await projectService.getAllProjects();
+      setProjects(res.data);
+    } catch (err: any) {
+      notifyError(`Failed to update publish state: ${err.message}`);
+    }
   };
 
   const handleSaveProject = async (formData: ProjectFormData) => {
@@ -202,6 +218,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       setIsSavingProject(false);
     }
   };
+
 
   const handleDeleteProject = async (id: string) => {
     try {
@@ -511,22 +528,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
         {/* TAB 2: PROJECTS REPOSITORY MANAGER */}
         {activeTab === 'projects' && (
           <div className="bg-hud-card border border-hud-border rounded-sm overflow-hidden space-y-4 p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-hud-border">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-hud-green" />
-                <span className="font-tech text-base font-bold text-hud-bright uppercase">
-                  PROJECT REPOSITORY ({projects.length})
-                </span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-hud-border">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-hud-green" />
+                  <span className="font-tech text-base font-bold text-hud-bright uppercase">
+                    PROJECT &amp; CLIENT WORK REPOSITORY ({projects.length})
+                  </span>
+                </div>
+                <div className="text-[11px] text-hud-slate">
+                  Manage engineering projects and client work deliveries. Updates sync automatically to public view.
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleResetDefaults}>
                   RESET DEFAULTS
                 </Button>
-                <Button variant="primary" size="sm" onClick={handleOpenCreateProject} icon={<Plus className="w-3.5 h-3.5" />}>
-                  ADD NEW PROJECT
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleOpenCreateProject('personal')}
+                  icon={<Plus className="w-3.5 h-3.5 text-hud-green" />}
+                >
+                  + PERSONAL PROJECT
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleOpenCreateProject('client')}
+                  icon={<Plus className="w-3.5 h-3.5 text-black" />}
+                  className="font-bold shadow-md shadow-hud-green/20"
+                >
+                  + CLIENT PROJECT
                 </Button>
               </div>
+            </div>
+
+            {/* Filter Pill Tabs */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+              <span className="text-hud-muted mr-1 text-[11px]">FILTER:</span>
+              <button
+                onClick={() => setProjectTypeFilter('all')}
+                className={`px-3 py-1 rounded-sm border transition-all cursor-pointer ${
+                  projectTypeFilter === 'all'
+                    ? 'bg-hud-green text-black border-hud-green font-bold'
+                    : 'bg-hud-panel border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                ALL PROJECTS ({projects.length})
+              </button>
+
+              <button
+                onClick={() => setProjectTypeFilter('personal')}
+                className={`px-3 py-1 rounded-sm border transition-all cursor-pointer ${
+                  projectTypeFilter === 'personal'
+                    ? 'bg-hud-green text-black border-hud-green font-bold'
+                    : 'bg-hud-panel border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                PERSONAL / ENGINEERING ({projects.filter((p) => p.project_type === 'personal' || !p.project_type).length})
+              </button>
+
+              <button
+                onClick={() => setProjectTypeFilter('client')}
+                className={`px-3 py-1 rounded-sm border transition-all cursor-pointer ${
+                  projectTypeFilter === 'client'
+                    ? 'bg-hud-green text-black border-hud-green font-bold'
+                    : 'bg-hud-panel border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                CLIENT WORK ({projects.filter((p) => p.project_type === 'client').length})
+              </button>
             </div>
 
             {isLoadingProjects ? (
@@ -542,61 +615,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                   <thead>
                     <tr className="border-b border-hud-border text-hud-muted text-[11px] uppercase bg-hud-panel/50">
                       <th className="p-3 pl-4">ORDER</th>
+                      <th className="p-3">TYPE</th>
                       <th className="p-3">TITLE / SLUG</th>
-                      <th className="p-3">CATEGORY</th>
-                      <th className="p-3">STATUS</th>
+                      <th className="p-3">CATEGORY / DELIVERY</th>
+                      <th className="p-3">PUBLISH STATE</th>
                       <th className="p-3">FEATURED</th>
                       <th className="p-3 pr-4 text-right">ACTIONS</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-hud-border text-xs">
-                    {projects.map((proj) => (
-                      <tr key={proj.id} className="hover:bg-hud-panel/40 transition-colors">
-                        <td className="p-3 pl-4 text-hud-slate font-bold">#{proj.sort_order}</td>
-                        <td className="p-3">
-                          <div className="font-bold text-hud-bright">{proj.title}</div>
-                          <div className="text-[10px] text-hud-slate">{proj.slug}</div>
-                        </td>
-                        <td className="p-3 text-hud-text">{proj.category}</td>
-                        <td className="p-3">
-                          <StatusBadge status={proj.status} size="sm" />
-                        </td>
-                        <td className="p-3">
-                          {proj.featured ? (
-                            <span className="text-hud-green flex items-center gap-1">
-                              <Star className="w-3.5 h-3.5 fill-current" />
-                              <span>YES</span>
-                            </span>
-                          ) : (
-                            <span className="text-hud-slate">NO</span>
-                          )}
-                        </td>
-                        <td className="p-3 pr-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleOpenEditProject(proj)}
-                              className="p-1.5 hover:bg-hud-panel text-hud-muted hover:text-hud-green border border-hud-border rounded-sm transition-colors"
-                              title="Edit Project"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(proj.id)}
-                              className="p-1.5 hover:bg-hud-red/20 text-hud-muted hover:text-hud-red border border-hud-border rounded-sm transition-colors"
-                              title="Delete Project"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="divide-y divide-hud-border text-xs font-mono">
+                    {projects
+                      .filter((proj) => {
+                        if (projectTypeFilter === 'personal') return proj.project_type === 'personal' || !proj.project_type;
+                        if (projectTypeFilter === 'client') return proj.project_type === 'client';
+                        return true;
+                      })
+                      .map((proj) => {
+                        const isClient = proj.project_type === 'client';
+                        const isPublished = proj.is_published !== false;
+                        return (
+                          <tr key={proj.id} className="hover:bg-hud-panel/40 transition-colors">
+                            <td className="p-3 pl-4 text-hud-slate font-bold">#{proj.sort_order}</td>
+                            
+                            {/* Type Badge */}
+                            <td className="p-3">
+                              {isClient ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-hud-cyan/10 border border-hud-cyan/40 text-hud-cyan rounded-xs text-[10px] font-bold">
+                                  <span>CLIENT</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-hud-green/10 border border-hud-green/40 text-hud-green rounded-xs text-[10px]">
+                                  <span>PERSONAL</span>
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="p-3">
+                              <div className="font-bold text-hud-bright flex items-center gap-2">
+                                <span>{proj.title}</span>
+                                {proj.demo_url && (
+                                  <a
+                                    href={proj.demo_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-hud-cyan hover:underline text-[10px]"
+                                    title="Open live URL"
+                                  >
+                                    [LIVE]
+                                  </a>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-hud-slate">{proj.slug}</div>
+                            </td>
+
+                            <td className="p-3 text-hud-text">
+                              <div>{proj.category}</div>
+                              {proj.delivery_time && (
+                                <div className="text-[10px] text-hud-cyan">⚡ {proj.delivery_time}</div>
+                              )}
+                            </td>
+
+                            {/* Publish Status Toggle */}
+                            <td className="p-3">
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePublish(proj)}
+                                className={`px-2 py-0.5 rounded-xs text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                  isPublished
+                                    ? 'bg-hud-green/15 border-hud-green text-hud-green hover:bg-hud-green/25'
+                                    : 'bg-hud-amber/15 border-hud-amber text-hud-amber hover:bg-hud-amber/25'
+                                }`}
+                                title="Click to toggle publish status"
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? 'bg-hud-green' : 'bg-hud-amber'}`} />
+                                <span>{isPublished ? 'PUBLISHED' : 'DRAFT (HIDDEN)'}</span>
+                              </button>
+                            </td>
+
+                            <td className="p-3">
+                              {proj.featured ? (
+                                <span className="text-hud-green flex items-center gap-1">
+                                  <Star className="w-3.5 h-3.5 fill-current" />
+                                  <span>YES</span>
+                                </span>
+                              ) : (
+                                <span className="text-hud-slate">NO</span>
+                              )}
+                            </td>
+
+                            <td className="p-3 pr-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleOpenEditProject(proj)}
+                                  className="p-1.5 hover:bg-hud-panel text-hud-muted hover:text-hud-green border border-hud-border rounded-sm transition-colors cursor-pointer"
+                                  title="Edit Project"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(proj.id)}
+                                  className="p-1.5 hover:bg-hud-red/20 text-hud-muted hover:text-hud-red border border-hud-border rounded-sm transition-colors cursor-pointer"
+                                  title="Delete Project"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
         )}
+
 
         {/* TAB 3: CLIENT INQUIRIES MANAGER */}
         {activeTab === 'inquiries' && (
@@ -825,17 +959,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       <Modal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
-        title={editingProject ? `EDIT MODULE // ${editingProject.title}` : 'REGISTER NEW ENGINEERING MODULE'}
+        title={
+          editingProject
+            ? `EDIT ${editingProject.project_type === 'client' ? 'CLIENT WORK' : 'MODULE'} // ${editingProject.title}`
+            : `REGISTER NEW ${newProjectType === 'client' ? 'CLIENT WORK DELIVERY' : 'ENGINEERING MODULE'}`
+        }
         systemTag="ADMIN.CRUD"
         maxWidth="4xl"
       >
         <AdminProjectForm
-          project={editingProject}
+          project={
+            editingProject || {
+              id: '',
+              slug: '',
+              title: '',
+              short_description: '',
+              category: newProjectType === 'client' ? 'Software & AI' : 'Embedded & IoT',
+              status: 'COMPLETED',
+              technologies: [],
+              problem: '',
+              engineering_approach: '',
+              what_i_built: '',
+              system_architecture: '',
+              workflow: '',
+              results_outcome: '',
+              featured: false,
+              sort_order: projects.length + 1,
+              project_type: newProjectType,
+              is_published: true,
+              delivery_time: ''
+            }
+          }
           onSave={handleSaveProject}
           onCancel={() => setIsFormModalOpen(false)}
           isLoading={isSavingProject}
         />
       </Modal>
+
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (

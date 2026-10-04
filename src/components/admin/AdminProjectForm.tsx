@@ -61,8 +61,12 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
     results_outcome: project?.results_outcome || '',
     featured: project?.featured ?? false,
     sort_order: project?.sort_order ?? 1,
+    project_type: project?.project_type || 'personal',
+    is_published: project?.is_published !== undefined ? project?.is_published : true,
+    delivery_time: project?.delivery_time || '',
     media: project?.media || []
   });
+
 
   const [techInput, setTechInput] = useState('');
   const [newMedia, setNewMedia] = useState<ProjectMedia>({
@@ -182,9 +186,22 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
     }));
   };
 
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(formData.project_type === 'personal');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave(formData);
+    const payload: ProjectFormData = {
+      ...formData,
+      project_type: formData.project_type || 'personal',
+      is_published: formData.is_published !== undefined ? formData.is_published : true,
+      problem: formData.problem || (formData.project_type === 'client' ? formData.short_description : 'Standard specification formulation.'),
+      engineering_approach: formData.engineering_approach || (formData.project_type === 'client' ? 'Modular component architecture, responsive styling, and reliable backend integration.' : 'Engineering design & testing approach.'),
+      what_i_built: formData.what_i_built || (formData.project_type === 'client' ? formData.short_description : 'Custom engineering solution.'),
+      system_architecture: formData.system_architecture || (formData.project_type === 'client' ? 'Frontend UI -> Application Logic -> Cloud Services' : 'System block diagram flow.'),
+      workflow: formData.workflow || (formData.project_type === 'client' ? 'Client requirements -> UI/UX Design -> Development -> QA -> Deployment' : 'Sequential execution loop.'),
+      results_outcome: formData.results_outcome || (formData.project_type === 'client' ? (formData.delivery_time ? `Delivered in ${formData.delivery_time} to client specification.` : 'Delivered on specification.') : 'Verified prototype results.')
+    };
+    await onSave(payload);
   };
 
   return (
@@ -214,11 +231,132 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
         </div>
       )}
 
+      {/* TOP ROW: PROJECT TYPE & PUBLISH STATUS SELECTORS */}
+      <div className="p-4 bg-hud-panel border-2 border-hud-border-bright rounded-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Project Type Switcher */}
+          <div className="space-y-1.5">
+            <label className="text-hud-green uppercase font-bold text-xs flex items-center gap-2">
+              <Layers className="w-4 h-4" />
+              <span>PROJECT CLASSIFICATION / TYPE *</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => ({ ...prev, project_type: 'personal' }));
+                  setShowAdvancedSpecs(true);
+                }}
+                className={`py-2.5 px-3 rounded-sm border font-bold text-xs uppercase transition-all cursor-pointer ${
+                  formData.project_type === 'personal'
+                    ? 'bg-hud-green text-black border-hud-green shadow-md shadow-hud-green/20'
+                    : 'bg-hud-card border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                Personal Project
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    project_type: 'client',
+                    category: prev.category === 'Embedded & IoT' ? 'Software & AI' : prev.category
+                  }));
+                }}
+                className={`py-2.5 px-3 rounded-sm border font-bold text-xs uppercase transition-all cursor-pointer ${
+                  formData.project_type === 'client'
+                    ? 'bg-hud-green text-black border-hud-green shadow-md shadow-hud-green/20'
+                    : 'bg-hud-card border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                Client Project
+              </button>
+            </div>
+            <span className="text-[10px] text-hud-muted">
+              {formData.project_type === 'client'
+                ? '→ Displayed in the dedicated public CLIENT WORK section'
+                : '→ Displayed in the public ENGINEERING PROJECTS section'}
+            </span>
+          </div>
+
+          {/* Publish State Switcher */}
+          <div className="space-y-1.5">
+            <label className="text-hud-green uppercase font-bold text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>VISIBILITY &amp; PUBLISH STATE *</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, is_published: true }))}
+                className={`py-2.5 px-3 rounded-sm border font-bold text-xs uppercase transition-all cursor-pointer ${
+                  formData.is_published !== false
+                    ? 'bg-hud-green text-black border-hud-green shadow-md shadow-hud-green/20'
+                    : 'bg-hud-card border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                Published (Live)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, is_published: false }))}
+                className={`py-2.5 px-3 rounded-sm border font-bold text-xs uppercase transition-all cursor-pointer ${
+                  formData.is_published === false
+                    ? 'bg-hud-amber text-black border-hud-amber shadow-md shadow-hud-amber/20'
+                    : 'bg-hud-card border-hud-border text-hud-slate hover:text-hud-bright'
+                }`}
+              >
+                Draft (Hidden)
+              </button>
+            </div>
+            <span className="text-[10px] text-hud-muted">
+              {formData.is_published !== false
+                ? '✓ Visible to visitors on the live portfolio'
+                : '⚠ Stored in Supabase but hidden from public visitors'}
+            </span>
+          </div>
+        </div>
+
+        {/* Client Delivery Speed Tag (If Client Project) */}
+        {formData.project_type === 'client' && (
+          <div className="pt-2 border-t border-hud-border grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-hud-bright uppercase font-bold block">
+                DELIVERY TIME / TIMELINE (e.g. "1 day", "3 days", "1 week")
+              </label>
+              <input
+                type="text"
+                value={formData.delivery_time || ''}
+                onChange={(e) => setFormData({ ...formData, delivery_time: e.target.value })}
+                placeholder="e.g. 1 day"
+                className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-hud-muted uppercase block">
+                CLIENT / REQUISITIONER IDENTIFIER (OPTIONAL)
+              </label>
+              <input
+                type="text"
+                value={formData.client_name || ''}
+                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                placeholder="Confidential or Public (e.g. Independent Developer)"
+                className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Basic Details Grid */}
       <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-4">
         <div className="text-hud-green uppercase font-bold tracking-wider flex items-center gap-2">
           <Layers className="w-4 h-4" />
-          <span>PROJECT IDENTIFICATION &amp; METADATA</span>
+          <span>PROJECT METADATA</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -229,7 +367,7 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
               required
               value={formData.title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="e.g. AI-Based Smart Air Quality Automation System"
+              placeholder="e.g. Software Developer Portfolio"
               className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
             />
           </div>
@@ -241,11 +379,12 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
               required
               value={formData.slug}
               onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              placeholder="e.g. ai-smart-air-quality-automation"
+              placeholder="e.g. software-developer-portfolio"
               className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
             />
           </div>
         </div>
+
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1">
@@ -485,119 +624,138 @@ export const AdminProjectForm: React.FC<AdminProjectFormProps> = ({
         </div>
       </div>
 
-      {/* Engineering Specification Blocks */}
-      <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-4">
+      {/* Short Description (Always Required) */}
+      <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-3">
         <div className="text-hud-green uppercase font-bold tracking-wider flex items-center gap-2">
           <Target className="w-4 h-4" />
-          <span>DETAILED ENGINEERING SPECIFICATIONS</span>
+          <span>PROJECT DESCRIPTION *</span>
         </div>
 
         <div className="space-y-1">
-          <label className="text-hud-muted uppercase block">SHORT DESCRIPTION *</label>
-          <textarea
-            required
-            rows={2}
-            value={formData.short_description}
-            onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-            placeholder="High-level engineering summary for project cards..."
-            className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-hud-muted uppercase block flex items-center gap-1">
-              <GitBranch className="w-3.5 h-3.5 text-hud-amber" />
-              <span>PROBLEM STATEMENT *</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={formData.problem}
-              onChange={(e) => setFormData({ ...formData, problem: e.target.value })}
-              placeholder="Describe the mechanical, electrical, or software constraint..."
-              className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-hud-muted uppercase block flex items-center gap-1">
-              <Target className="w-3.5 h-3.5 text-hud-cyan" />
-              <span>ENGINEERING APPROACH *</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={formData.engineering_approach}
-              onChange={(e) => setFormData({ ...formData, engineering_approach: e.target.value })}
-              placeholder="Formulation, mathematical models, sensor selection..."
-              className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-hud-muted uppercase block flex items-center gap-1">
-            <Wrench className="w-3.5 h-3.5 text-hud-green" />
-            <span>WHAT I BUILT &amp; HARDWARE INTEGRATION *</span>
-          </label>
+          <label className="text-hud-muted uppercase block">SUMMARY FOR PROJECT CARD *</label>
           <textarea
             required
             rows={3}
-            value={formData.what_i_built}
-            onChange={(e) => setFormData({ ...formData, what_i_built: e.target.value })}
-            placeholder="Describe hardware fabrication, firmware implementation, wiring..."
-            className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+            value={formData.short_description}
+            onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+            placeholder="Built and delivered a personal portfolio website for a software developer based on the client's requirements."
+            className="w-full p-2.5 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y text-xs"
           />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-hud-muted uppercase block flex items-center gap-1">
-            <Layers className="w-3.5 h-3.5 text-hud-green" />
-            <span>SYSTEM ARCHITECTURE (FLOW/BLOCKS) *</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.system_architecture}
-            onChange={(e) => setFormData({ ...formData, system_architecture: e.target.value })}
-            placeholder="Sensors -> MCU -> Filter -> PID Output -> Actuator Stage"
-            className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-hud-muted uppercase block flex items-center gap-1">
-              <Workflow className="w-3.5 h-3.5 text-hud-green" />
-              <span>WORKFLOW / EXECUTION *</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={formData.workflow}
-              onChange={(e) => setFormData({ ...formData, workflow: e.target.value })}
-              placeholder="Sequential steps and control loop cycle timing..."
-              className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-hud-muted uppercase block flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-hud-green" />
-              <span>MEASURED RESULTS / OUTCOME *</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={formData.results_outcome}
-              onChange={(e) => setFormData({ ...formData, results_outcome: e.target.value })}
-              placeholder="Empirical metrics, verified hackathon awards, system outcomes..."
-              className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
-            />
-          </div>
         </div>
       </div>
+
+      {/* Engineering / Case Study Specification Blocks */}
+      <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="text-hud-green uppercase font-bold tracking-wider flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            <span>CASE STUDY &amp; ARCHITECTURE SPECIFICATIONS {formData.project_type === 'client' ? '(OPTIONAL)' : '*'}</span>
+          </div>
+
+          {formData.project_type === 'client' && (
+            <button
+              type="button"
+              onClick={() => setShowAdvancedSpecs(!showAdvancedSpecs)}
+              className="text-hud-cyan hover:underline text-xs"
+            >
+              {showAdvancedSpecs ? '[HIDE ADVANCED FIELDS]' : '[EXPAND ADVANCED FIELDS]'}
+            </button>
+          )}
+        </div>
+
+        {(showAdvancedSpecs || formData.project_type === 'personal') && (
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-hud-muted uppercase block flex items-center gap-1">
+                  <GitBranch className="w-3.5 h-3.5 text-hud-amber" />
+                  <span>PROBLEM STATEMENT</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.problem}
+                  onChange={(e) => setFormData({ ...formData, problem: e.target.value })}
+                  placeholder="Describe the mechanical, electrical, or software constraint..."
+                  className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-hud-muted uppercase block flex items-center gap-1">
+                  <Target className="w-3.5 h-3.5 text-hud-cyan" />
+                  <span>ENGINEERING / DEVELOPMENT APPROACH</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.engineering_approach}
+                  onChange={(e) => setFormData({ ...formData, engineering_approach: e.target.value })}
+                  placeholder="Formulation, mathematical models, sensor selection, or tech stack strategy..."
+                  className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-hud-muted uppercase block flex items-center gap-1">
+                <Wrench className="w-3.5 h-3.5 text-hud-green" />
+                <span>WHAT I BUILT &amp; DELIVERED</span>
+              </label>
+              <textarea
+                rows={3}
+                value={formData.what_i_built}
+                onChange={(e) => setFormData({ ...formData, what_i_built: e.target.value })}
+                placeholder="Describe hardware fabrication, firmware, UI components, or software delivery..."
+                className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-hud-muted uppercase block flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-hud-green" />
+                <span>SYSTEM ARCHITECTURE (FLOW / BLOCKS)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.system_architecture}
+                onChange={(e) => setFormData({ ...formData, system_architecture: e.target.value })}
+                placeholder="e.g. React Frontend -> Tailwind CSS -> Supabase Integration"
+                className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-hud-muted uppercase block flex items-center gap-1">
+                  <Workflow className="w-3.5 h-3.5 text-hud-green" />
+                  <span>WORKFLOW / EXECUTION</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.workflow}
+                  onChange={(e) => setFormData({ ...formData, workflow: e.target.value })}
+                  placeholder="Sequential steps, timing, or delivery workflow..."
+                  className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-hud-muted uppercase block flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-hud-green" />
+                  <span>MEASURED RESULTS / OUTCOME</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.results_outcome}
+                  onChange={(e) => setFormData({ ...formData, results_outcome: e.target.value })}
+                  placeholder="Empirical metrics, delivery turnaround, outcome..."
+                  className="w-full p-2 bg-hud-card border border-hud-border focus:border-hud-green text-hud-bright rounded-sm focus:outline-none resize-y"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
 
       {/* Media Attachments Manager */}
       <div className="p-4 bg-hud-panel border border-hud-border rounded-sm space-y-4">

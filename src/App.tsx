@@ -4,6 +4,7 @@ import { Footer } from './components/layout/Footer';
 import { HeroSection } from './sections/HeroSection';
 import { ServicesSection } from './sections/ServicesSection';
 import { ProjectsSection } from './sections/ProjectsSection';
+import { ClientWorkSection } from './sections/ClientWorkSection';
 import { SkillsSection } from './sections/SkillsSection';
 import { AchievementsSection } from './sections/AchievementsSection';
 import { CertificationsSection } from './sections/CertificationsSection';
@@ -170,6 +171,9 @@ export const App: React.FC = () => {
 
           {/* 02 WHAT I BUILT — INTERACTIVE PROJECT WORKSTATION */}
           <ProjectsSection />
+
+          {/* 02.5 CLIENT WORK — DELIVERED CLIENT SOLUTIONS */}
+          <ClientWorkSection />
 
           {/* 03 WHAT I CAN WORK WITH — CAPABILITY MAP */}
           <SkillsSection

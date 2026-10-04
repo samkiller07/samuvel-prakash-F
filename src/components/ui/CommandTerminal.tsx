@@ -16,6 +16,7 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({
   const modules = [
     { id: 'services', label: '01 SERVICES', icon: '⚡' },
     { id: 'projects', label: '02 PROJECTS', icon: '🛠️' },
+    { id: 'client-work', label: '02.5 CLIENT WORK', icon: '💼' },
     { id: 'skills', label: '03 SKILLS', icon: '🧠' },
     { id: 'achievements', label: '04 TIMELINE', icon: '🏆' },
     { id: 'about', label: '05 ABOUT', icon: '👤' },
@@ -28,13 +29,16 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({
     if (!cmd) return;
 
     if (cmd === 'help') {
-      setCommandOutput('AVAILABLE COMMANDS: services, projects, skills, timeline, about, hire, start, clear');
+      setCommandOutput('AVAILABLE COMMANDS: services, projects, client, skills, timeline, about, hire, start, clear');
     } else if (cmd === 'services' || cmd === '01') {
       setCommandOutput('NAVIGATING TO // FREELANCE SERVICES WORKSTATION...');
       onNavigate('services');
     } else if (cmd === 'projects' || cmd === '02') {
       setCommandOutput('MOUNTING // INTERACTIVE PROJECT SHOWCASE...');
       onNavigate('projects');
+    } else if (cmd === 'client' || cmd === 'client-work' || cmd === 'clientwork' || cmd === 'work' || cmd === '02.5') {
+      setCommandOutput('CONNECTING TO // CLIENT WORK & DELIVERED SOLUTIONS...');
+      onNavigate('client-work');
     } else if (cmd === 'skills' || cmd === '03') {
       setCommandOutput('LOADING // CAPABILITY & DOMAIN EXPLORER...');
       onNavigate('skills');

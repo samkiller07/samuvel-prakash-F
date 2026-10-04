@@ -76,11 +76,30 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
     setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
   }, [maxIndex]);
 
-  // Handler when user triggers manual navigation -> turn auto-scroll off
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Resume auto-slide timer helper
+  const scheduleAutoSlideResume = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      setIsAutoSlideEnabled(true);
+    }, 4500);
+  }, []);
+
+  // Handler when user triggers manual navigation -> pause temporarily then resume
   const handleManualSlide = useCallback((action: () => void) => {
     setIsAutoSlideEnabled(false);
     action();
+    scheduleAutoSlideResume();
+  }, [scheduleAutoSlideResume]);
+
+  // Clean up timer
+  useEffect(() => {
+    return () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
   }, []);
+
 
   // Check reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -169,6 +188,7 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
 
       setIsDragging(false);
       setDragDeltaPx(0);
+      scheduleAutoSlideResume();
     }
 
     pointerDownRef.current = false;

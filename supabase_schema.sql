@@ -61,9 +61,20 @@ CREATE TABLE IF NOT EXISTS public.projects (
     results_outcome TEXT NOT NULL,
     featured BOOLEAN DEFAULT false NOT NULL,
     sort_order INT DEFAULT 0 NOT NULL,
+    project_type VARCHAR(50) DEFAULT 'personal' NOT NULL, -- 'personal' | 'client'
+    is_published BOOLEAN DEFAULT true NOT NULL,
+    delivery_time VARCHAR(100),
+    client_name VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Safe migrations if columns already exist on remote
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS project_type VARCHAR(50) DEFAULT 'personal' NOT NULL;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true NOT NULL;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS delivery_time VARCHAR(100);
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS client_name VARCHAR(255);
+
 
 -- Project Media Table (Schematics, Diagrams, Photos, Videos)
 CREATE TABLE IF NOT EXISTS public.project_media (

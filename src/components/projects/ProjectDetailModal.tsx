@@ -46,7 +46,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         <div className="p-4 bg-hud-panel border border-hud-border rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <StatusBadge status={project.status} />
+              <StatusBadge status={project.status as any} />
               <span className="text-xs font-mono text-hud-muted">|</span>
               <span className="text-xs font-mono text-hud-green uppercase font-bold">{project.category}</span>
             </div>
