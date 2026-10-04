@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%" style="background:#070a0e; font-family:'JetBrains Mono', monospace;">
+  <defs>
+    <linearGradient id="blueCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0c1824"/>
+      <stop offset="100%" stop-color="#060c14"/>
+    </linearGradient>
+    <filter id="cyanGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Grid -->
+  <g stroke="#00c8ff" stroke-opacity="0.08" stroke-width="1">
+    <line x1="0" y1="75" x2="800" y2="75" /><line x1="0" y1="150" x2="800" y2="150" />
+    <line x1="0" y1="225" x2="800" y2="225" /><line x1="0" y1="300" x2="800" y2="300" />
+    <line x1="0" y1="375" x2="800" y2="375" /><line x1="200" y1="0" x2="200" y2="450" />
+    <line x1="400" y1="0" x2="400" y2="450" /><line x1="600" y1="0" x2="600" y2="450" />
+  </g>
+
+  <!-- Header HUD Bar -->
+  <rect x="25" y="20" width="750" height="36" rx="3" fill="#0c1622" stroke="#00c8ff" stroke-opacity="0.4" stroke-width="1"/>
+  <circle cx="45" cy="38" r="4" fill="#00c8ff" filter="url(#cyanGlow)" />
+  <text x="60" y="42" fill="#00c8ff" font-size="12" font-weight="bold" letter-spacing="1.5">ALGORITHMIC MATCHING ENGINE // INTERNSHIP RECOMMENDATION SYSTEM</text>
+  <text x="640" y="42" fill="#7fa8cc" font-size="11">STACK: PYTHON • FLASK</text>
+
+  <!-- Left: Candidate Profile Input Matrix -->
+  <rect x="35" y="75" width="220" height="345" rx="4" fill="url(#blueCard)" stroke="#00c8ff" stroke-opacity="0.3" stroke-width="1"/>
+  <rect x="35" y="75" width="220" height="28" rx="4" fill="#122538" stroke="#00c8ff" stroke-opacity="0.2"/>
+  <text x="50" y="93" fill="#00c8ff" font-size="11" font-weight="bold">01 // CANDIDATE PROFILE</text>
+
+  <!-- Student Input Card -->
+  <rect x="50" y="115" width="190" height="85" rx="3" fill="#091420" stroke="#00c8ff" stroke-opacity="0.2"/>
+  <text x="60" y="135" fill="#ffffff" font-size="10" font-weight="bold">STUDENT ATTRIBUTES</text>
+  <text x="60" y="152" fill="#8cb8dd" font-size="9">Skills: Python, IoT, Robotics</text>
+  <text x="60" y="167" fill="#8cb8dd" font-size="9">Sector Pref: Automation / R&amp;D</text>
+  <text x="60" y="182" fill="#8cb8dd" font-size="9">Degree: B.E. Mechatronics</text>
+
+  <!-- Education Filter Matrix -->
+  <rect x="50" y="210" width="190" height="95" rx="3" fill="#091420" stroke="#00c8ff" stroke-opacity="0.2"/>
+  <text x="60" y="230" fill="#00ff66" font-size="10" font-weight="bold">SUPPORTED TIERS</text>
+  <text x="60" y="248" fill="#d0e2f0" font-size="9">• 10th Standard / Matric</text>
+  <text x="60" y="263" fill="#d0e2f0" font-size="9">• 12th Higher Secondary</text>
+  <text x="60" y="278" fill="#d0e2f0" font-size="9">• Undergraduate (UG)</text>
+  <text x="60" y="293" fill="#d0e2f0" font-size="9">• Postgraduate (PG)</text>
+
+  <!-- Location Constraints -->
+  <rect x="50" y="315" width="190" height="90" rx="3" fill="#091420" stroke="#00c8ff" stroke-opacity="0.2"/>
+  <text x="60" y="335" fill="#ffaa00" font-size="10" font-weight="bold">LOCATION HEURISTICS</text>
+  <text x="60" y="353" fill="#8cb8dd" font-size="9">Tier-1 / Industrial Hubs</text>
+  <text x="60" y="369" fill="#8cb8dd" font-size="9">Remote / Hybrid Distance</text>
+  <text x="60" y="387" fill="#00ff66" font-size="9">Weighting: Vector Adjusted</text>
+
+  <!-- Middle Connector -->
+  <path d="M 255 240 L 295 240" fill="none" stroke="#00c8ff" stroke-width="2" stroke-dasharray="4,4" filter="url(#cyanGlow)"/>
+  <polygon points="295,235 305,240 295,245" fill="#00c8ff"/>
+
+  <!-- Middle: Weighted Matching Algorithm -->
+  <rect x="305" y="75" width="225" height="345" rx="4" fill="url(#blueCard)" stroke="#00c8ff" stroke-opacity="0.6" stroke-width="1.5"/>
+  <rect x="305" y="75" width="225" height="28" rx="4" fill="#142c44" stroke="#00c8ff" stroke-opacity="0.3"/>
+  <text x="320" y="93" fill="#00c8ff" font-size="11" font-weight="bold">02 // WEIGHTED ALGORITHM</text>
+
+  <!-- Weights Breakdown Chart -->
+  <g transform="translate(325, 115)">
+    <!-- Skill Weight -->
+    <text x="0" y="15" fill="#ffffff" font-size="10" font-weight="bold">SKILLS MATCH</text>
+    <text x="145" y="15" fill="#00ff66" font-size="10" font-weight="bold">30%</text>
+    <rect x="0" y="22" width="185" height="10" rx="2" fill="#091420"/>
+    <rect x="0" y="22" width="130" height="10" rx="2" fill="#00ff66"/>
+
+    <!-- Sector Weight -->
+    <text x="0" y="52" fill="#ffffff" font-size="10" font-weight="bold">SECTOR ALIGNMENT</text>
+    <text x="145" y="52" fill="#00c8ff" font-size="10" font-weight="bold">30%</text>
+    <rect x="0" y="59" width="185" height="10" rx="2" fill="#091420"/>
+    <rect x="0" y="59" width="130" height="10" rx="2" fill="#00c8ff"/>
+
+    <!-- Education Weight -->
+    <text x="0" y="89" fill="#ffffff" font-size="10" font-weight="bold">EDUCATION LEVEL</text>
+    <text x="145" y="89" fill="#ffaa00" font-size="10" font-weight="bold">20%</text>
+    <rect x="0" y="96" width="185" height="10" rx="2" fill="#091420"/>
+    <rect x="0" y="96" width="90" height="10" rx="2" fill="#ffaa00"/>
+
+    <!-- Location Weight -->
+    <text x="0" y="126" fill="#ffffff" font-size="10" font-weight="bold">LOCATION PROXIMITY</text>
+    <text x="145" y="126" fill="#ff00bb" font-size="10" font-weight="bold">20%</text>
+    <rect x="0" y="133" width="185" height="10" rx="2" fill="#091420"/>
+    <rect x="0" y="133" width="90" height="10" rx="2" fill="#ff00bb"/>
+  </g>
+
+  <!-- Python / Flask Backend Callout -->
+  <rect x="320" y="280" width="195" height="125" rx="3" fill="#08101a" stroke="#00c8ff" stroke-opacity="0.3"/>
+  <text x="330" y="300" fill="#00c8ff" font-size="10" font-weight="bold">FLASK REST PIPELINE:</text>
+  <text x="330" y="318" fill="#8cb8dd" font-size="9">Score = Ws·S + Wsec·Sec +</text>
+  <text x="330" y="332" fill="#8cb8dd" font-size="9">        Wed·Ed + Wloc·Loc</text>
+  <text x="330" y="352" fill="#00ff66" font-size="9">Rank-Sorted Response: 12ms</text>
+  <text x="330" y="368" fill="#ffaa00" font-size="9">Deterministic Multi-Attribute</text>
+  <text x="330" y="384" fill="#ffffff" font-size="9">JSON API Endpoints</text>
+
+  <!-- Right Connector -->
+  <path d="M 530 240 L 570 240" fill="none" stroke="#00c8ff" stroke-width="2" stroke-dasharray="4,4" filter="url(#cyanGlow)"/>
+  <polygon points="570,235 580,240 570,245" fill="#00c8ff"/>
+
+  <!-- Right: Matched Opportunities UI Output -->
+  <rect x="580" y="75" width="190" height="345" rx="4" fill="url(#blueCard)" stroke="#00c8ff" stroke-opacity="0.3" stroke-width="1"/>
+  <rect x="580" y="75" width="190" height="28" rx="4" fill="#122538" stroke="#00c8ff" stroke-opacity="0.2"/>
+  <text x="595" y="93" fill="#00c8ff" font-size="11" font-weight="bold">03 // MATCHED RESULTS</text>
+
+  <!-- Result Item 1 -->
+  <rect x="595" y="115" width="160" height="85" rx="3" fill="#081422" stroke="#00ff66" stroke-width="1"/>
+  <text x="605" y="132" fill="#00ff66" font-size="9" font-weight="bold">#1 MATCH: 94.8%</text>
+  <text x="605" y="148" fill="#ffffff" font-size="10" font-weight="bold">Robotics Engineer Intern</text>
+  <text x="605" y="163" fill="#8cb8dd" font-size="8">Automation Labs • Tech Hub</text>
+  <text x="605" y="178" fill="#ffaa00" font-size="8">Skills Matched: 5/5</text>
+
+  <!-- Result Item 2 -->
+  <rect x="595" y="210" width="160" height="85" rx="3" fill="#081422" stroke="#00c8ff" stroke-width="1"/>
+  <text x="605" y="227" fill="#00c8ff" font-size="9" font-weight="bold">#2 MATCH: 88.2%</text>
+  <text x="605" y="243" fill="#ffffff" font-size="10" font-weight="bold">Embedded Systems Trainee</text>
+  <text x="605" y="258" fill="#8cb8dd" font-size="8">IoT Core Solutions</text>
+  <text x="605" y="273" fill="#ffaa00" font-size="8">Skills Matched: 4/5</text>
+
+  <!-- Result Item 3 -->
+  <rect x="595" y="305" width="160" height="100" rx="3" fill="#081422" stroke="#00c8ff" stroke-opacity="0.3"/>
+  <text x="605" y="322" fill="#7fa8cc" font-size="9" font-weight="bold">#3 MATCH: 81.5%</text>
+  <text x="605" y="338" fill="#ffffff" font-size="10" font-weight="bold">Python Automation Intern</text>
+  <text x="605" y="353" fill="#8cb8dd" font-size="8">Engineering Software Corp</text>
+  <text x="605" y="380" fill="#00ff66" font-size="9" font-weight="bold">[FLASK WEB APP LIVE]</text>
+</svg>
